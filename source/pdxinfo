@@ -1,0 +1,8 @@
+name=HEXA
+author=rae
+description=Board the helm of starship HEXA, and conquer the universe the only way you know how: shapes.
+bundleID=wtf.rae.hexa
+version=1.0.0 rev Cata
+buildNumber=158
+imagePath=images/system
+launchSoundPath=audio/sfx/select
