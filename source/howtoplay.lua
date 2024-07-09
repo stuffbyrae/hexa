@@ -12,7 +12,13 @@ function howtoplay:init(...)
 
 	function pd.gameWillPause() -- When the game's paused...
 		local menu = pd.getSystemMenu()
+		pauseimage()
 		menu:removeAllMenuItems()
+		if not scenemanager.transitioning then
+			menu:addMenuItem(text('goback'), function()
+				scenemanager:transitionscene(title)
+			end)
+		end
 	end
 
 	assets = {
@@ -35,7 +41,9 @@ function howtoplay:init(...)
 			scenemanager:transitionscene(title)
 		end
 	}
-	pd.inputHandlers.push(vars.howtoplayHandlers)
+	pd.timer.performAfterDelay(scenemanager.transitiontime, function()
+		pd.inputHandlers.push(vars.howtoplayHandlers)
+	end)
 
 	vars.anim_stars_small_x.repeats = true
 	vars.anim_stars_small_y.repeats = true

@@ -12,7 +12,14 @@ function options:init(...)
 
 	function pd.gameWillPause() -- When the game's paused...
 		local menu = pd.getSystemMenu()
+		pauseimage()
 		menu:removeAllMenuItems()
+		if not scenemanager.transitioning and vars.selection > 0 then
+			menu:addMenuItem(text('goback'), function()
+				scenemanager:transitionscene(title)
+				vars.selection = 0
+			end)
+		end
 	end
 
 	assets = {
@@ -24,6 +31,7 @@ function options:init(...)
 		sfx_bonk = smp.new('audio/sfx/bonk'),
 		sfx_select = smp.new('audio/sfx/select'),
 		sfx_back = smp.new('audio/sfx/back'),
+		sfx_boom = smp.new('audio/sfx/boom'),
 		fg = gfx.image.new('images/fg'),
 		fg_hexa_1 = gfx.image.new('images/fg_hexa_1'),
 		fg_hexa_2 = gfx.image.new('images/fg_hexa_2'),
@@ -36,7 +44,7 @@ function options:init(...)
 		anim_stars_large_y = pd.timer.new(1250, 0, -239),
 		anim_fg_hexa = pd.timer.new(3000, 0, 7, pd.easingFunctions.inOutSine),
 		selections = {'music', 'sfx', 'flip', 'crank', 'reset'},
-		selection = 1,
+		selection = 0,
 		resetprogress = 1,
 	}
 	vars.optionsHandlers = {
@@ -67,6 +75,7 @@ function options:init(...)
 		BButtonDown = function()
 			if save.sfx then assets.sfx_back:play() end
 			scenemanager:transitionscene(title)
+			vars.selection = 0
 		end,
 
 		AButtonDown = function()
@@ -87,6 +96,7 @@ function options:init(...)
 				if vars.resetprogress < 3 then
 					vars.resetprogress += 1
 				elseif vars.resetprogress == 3 then
+					if save.sfx then assets.sfx_boom:play() end
 					vars.resetprogress += 1
 					save.score = 0
 				end
@@ -94,7 +104,10 @@ function options:init(...)
 			if save.sfx then assets.sfx_select:play() end
 		end,
 	}
-	pd.inputHandlers.push(vars.optionsHandlers)
+	pd.timer.performAfterDelay(scenemanager.transitiontime, function()
+		pd.inputHandlers.push(vars.optionsHandlers)
+		vars.selection = 1
+	end)
 
 	vars.anim_stars_small_x.repeats = true
 	vars.anim_stars_small_y.repeats = true
@@ -117,7 +130,7 @@ function options:init(...)
 		if vars.selections[vars.selection] == 'reset' then
 			assets.full_circle:drawTextAligned(text('options_reset_' .. vars.resetprogress), 200, 50 + (20 * vars.selection), kTextAlignment.center)
 		else
-			assets.full_circle:drawTextAligned(text('options_' .. vars.selections[vars.selection]) .. text(tostring(save[vars.selections[vars.selection]])), 200, 50 + (20 * vars.selection), kTextAlignment.center)
+			assets.full_circle:drawTextAligned((vars.selection > 0 and text('options_' .. vars.selections[vars.selection]) .. text(tostring(save[vars.selections[vars.selection]]))) or (' '), 200, 50 + (20 * vars.selection), kTextAlignment.center)
 		end
 		assets.half_circle:drawText('v' .. pd.metadata.version, 65, 205)
 		assets.half_circle:drawText(text('move') .. ' ' .. text('toggle'), 70, 220)
@@ -128,4 +141,21 @@ function options:init(...)
 	end)
 
 	self:add()
+end
+
+function options:update()
+	local ticks = pd.getCrankTicks(6)
+	if ticks ~= 0 and vars.selection > 0 then
+		if save.sfx then
+			if ticks < 0 and vars.selection == 1 then
+				assets.sfx_bonk:play()
+			elseif ticks > 0 and vars.selection == #vars.selections then
+				assets.sfx_bonk:play()
+			else
+				assets.sfx_move:play()
+			end
+		end
+		vars.selection += ticks
+		vars.selection = math.max(1, math.min(#vars.selections, vars.selection))
+	end
 end

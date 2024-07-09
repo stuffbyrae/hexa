@@ -16,10 +16,14 @@ local gfx <const> = pd.graphics
 local smp <const> = pd.sound.sampleplayer
 local fle <const> = pd.sound.fileplayer
 local text <const> = gfx.getLocalizedText
+local mask_arcade <const> = gfx.image.new('images/mask_arcade')
+local mask_zen <const> = gfx.image.new('images/mask_zen')
+local pause <const> = gfx.image.new('images/pause')
+local pause_luci <const> = gfx.image.new('images/pause_luci')
 
 pd.display.setRefreshRate(30)
 gfx.setBackgroundColor(gfx.kColorBlack)
-gfx.setLineWidth(2)
+gfx.setLineWidth(3)
 
 -- Save check
 function savecheck()
@@ -38,14 +42,45 @@ savecheck()
 -- When the game closes...
 function pd.gameWillTerminate()
     pd.datastore.write(save)
-    local img = gfx.getDisplayImage()
-    local byebye = gfx.imagetable.new('images/fade/fade')
-    local byebyeanim = gfx.animator.new(500, #byebye, 1)
-    gfx.setDrawOffset(0, 0)
-    while not byebyeanim:ended() do
-        img:draw(0, 0)
-        byebye:drawImage(math.floor(byebyeanim:currentValue()), 0, 0)
-        pd.display.flush()
+    if vars.can_do_stuff then
+        local img = gfx.getDisplayImage()
+        local byebye = gfx.imagetable.new('images/byebye')
+        local byebyeanim = gfx.animator.new(600, 1, #byebye)
+        scenemanager:cleanupscene()
+        local sfx = smp.new('audio/sfx/hexa')
+        shakies()
+        shakies_y()
+        gfx.setDrawOffset(0, 0)
+        if not save.sfx then sfx:play() end
+        while not byebyeanim:ended() do
+            pd.timer.updateTimers()
+            img:draw(anim_shakies.value, anim_shakies_y.value)
+            byebye:drawImage(math.floor(byebyeanim:currentValue()), anim_shakies.value, anim_shakies_y.value)
+            pd.display.flush()
+        end
+    end
+end
+
+function pauseimage(mode)
+    if mode == nil or not vars.can_do_stuff then
+        pd.setMenuImage(pause_luci)
+    else
+        local image = gfx.getDisplayImage()
+        gfx.pushContext(image)
+            if mode == "arcade" then
+                mask_arcade:draw(0, 0)
+            elseif mode == "zen" then
+                mask_zen:draw(0, 0)
+            end
+        gfx.popContext()
+        gfx.pushContext(pause)
+        if mode == "arcade" then
+            image:drawScaled(-45, 65, 0.666)
+        elseif mode == "zen" then
+            image:drawScaled(-33, 65, 0.666)
+        end
+        gfx.popContext()
+        pd.setMenuImage(pause)
     end
 end
 
@@ -134,11 +169,11 @@ function shakies_y(time, int)
     if pd.getReduceFlashing() or perf then
         return
     end
-    anim_shakies_y = pd.timer.new(time or 500, int or 10, 0, pd.easingFunctions.outElastic)
+    anim_shakies_y = pd.timer.new(time or 750, int or 10, 0, pd.easingFunctions.outElastic)
 end
 
 import 'game'
-scenemanager:switchscene(title)
+scenemanager:switchscene(title, true)
 
 function pd.update()
     -- Screen shake update logic

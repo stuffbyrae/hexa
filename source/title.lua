@@ -17,7 +17,14 @@ function title:init(...)
 
 	function pd.gameWillPause() -- When the game's paused...
 		local menu = pd.getSystemMenu()
+		pauseimage()
 		menu:removeAllMenuItems()
+		if not scenemanager.transitioning and vars.selection > 0 then
+			menu:addMenuItem(text('options'), function()
+				scenemanager:transitionscene(options)
+				vars.selection = 0
+			end)
+		end
 	end
 
 	assets = {
@@ -33,13 +40,13 @@ function title:init(...)
 	}
 
 	vars = {
+		animate = args[1], -- bool. does the title animate on transition back?
 		anim_stars_small_x = pd.timer.new(4000, 0, -399),
 		anim_stars_small_y = pd.timer.new(2750, 0, -239),
 		anim_stars_large_x = pd.timer.new(2500, 0, -399),
 		anim_stars_large_y = pd.timer.new(1250, 0, -239),
-		anim_title = pd.timer.new(500, 150, 0, pd.easingFunctions.outBack),
 		selections = {'arcademode', 'zenmode', 'howtoplay', 'options', 'credits'},
-		selection = 1,
+		selection = 0,
 	}
 	vars.titleHandlers = {
 		upButtonDown = function()
@@ -75,9 +82,19 @@ function title:init(...)
 			elseif vars.selections[vars.selection] == "credits" then
 				scenemanager:transitionscene(credits)
 			end
+			vars.selection = 0
 		end,
 	}
-	pd.inputHandlers.push(vars.titleHandlers)
+	pd.timer.performAfterDelay(scenemanager.transitiontime, function()
+		pd.inputHandlers.push(vars.titleHandlers)
+		vars.selection = 1
+	end)
+
+	if vars.animate then
+		vars.anim_title = pd.timer.new(500, 200, 0, pd.easingFunctions.outBack)
+	else
+		vars.anim_title = pd.timer.new(0, 0, 0)
+	end
 
 	vars.anim_stars_small_x.repeats = true
 	vars.anim_stars_small_y.repeats = true
@@ -97,12 +114,29 @@ function title:init(...)
 		assets.half_circle:drawTextAligned(text('howtoplay'), 380 + vars.anim_title.value, 170, kTextAlignment.right)
 		assets.half_circle:drawTextAligned(text('options'), 380 + vars.anim_title.value, 190, kTextAlignment.right)
 		assets.half_circle:drawTextAligned(text('credits'), 380 + vars.anim_title.value, 210, kTextAlignment.right)
-		assets.full_circle:drawTextAligned(text(vars.selections[vars.selection]), 380 + vars.anim_title.value, 110 + (20 * vars.selection), kTextAlignment.right)
-		assets.half_circle:drawText(text('move') .. ' ' .. text('select'), 10, 220)
+		assets.full_circle:drawTextAligned((vars.selection > 0 and text(vars.selections[vars.selection])) or (' '), 380 + vars.anim_title.value, 110 + (20 * vars.selection), kTextAlignment.right)
+		assets.half_circle:drawText(text('move') .. ' ' .. text('select'), 10 - vars.anim_title.value, 220)
 		gfx.setImageDrawMode(gfx.kDrawModeCopy)
 	end)
 
 	newmusic('audio/music/title', true)
 
 	self:add()
+end
+
+function title:update()
+	local ticks = pd.getCrankTicks(6)
+	if ticks ~= 0 and vars.selection > 0 then
+		if save.sfx then
+			if ticks < 0 and vars.selection == 1 then
+				assets.sfx_bonk:play()
+			elseif ticks > 0 and vars.selection == #vars.selections then
+				assets.sfx_bonk:play()
+			else
+				assets.sfx_move:play()
+			end
+		end
+		vars.selection += ticks
+		vars.selection = math.max(1, math.min(#vars.selections, vars.selection))
+	end
 end

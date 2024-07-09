@@ -9,7 +9,7 @@ local podbaydoor <const> = gfx.image.new('images/podbaydoor')
 local sfx_transition <const> = smp.new('audio/sfx/transition')
 
 function scenemanager:init()
-    self.transitiontime = 750
+    self.transitiontime = 700
     self.transitioning = false
 end
 
@@ -36,11 +36,11 @@ function scenemanager:transitionscene(scene, ...)
     self.transitioning = true
     self.newscene = scene
     self.sceneargs = {...}
-    local transitiontimer = self:transition(-200, 0, 400, 202)
-    sfx_transition:play()
+    local transitiontimer = self:transition(-230, -10, 410, 202)
+    if save.sfx then sfx_transition:play() end
     transitiontimer.timerEndedCallback = function()
         self:loadnewscene()
-        transitiontimer = self:transition(0, -200, 202, 400)
+        transitiontimer = self:transition(-10, -230, 202, 410)
         transitiontimer.timerEndedCallback = function()
             self.transitioning = false
         end
