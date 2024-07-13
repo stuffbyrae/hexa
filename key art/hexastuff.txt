@@ -1,17 +1,14 @@
-:root
-{
-    --gameBg: #110f41;
-    --gameTextOnBg: #e3ffe2;
-    --gameFg: #8678ff;
-    --gameTextOnFg: #d6d4ff;
-}
+--gameBg: #110f41
+--gameTextOnBg: #e3ffe2
+--gameFg: #8678ff
+--gameTextOnFg: #d6d4ff
 
 Board the helm of Starship HEXA, and conquer the universe the only way you know how: shapes.
 
 
 You're the commander of Starship HEXA, the head of an evil space fleet dead set on taking over the universe. You're well on your way to assuming control of everything that is and shall be; however, your attack methods are a bit unorthodox... We can't dwell on it for too long, though, so get out there and match those hexagons!
 
-HEXA is a triangle-matching puzzle game with gameplay that's dead-simple, but tons of fun. Try for a high score in the action-packed Arcade Mode, with power-ups and a looming timer; or kick back in the low-stakes Zen Mode and hone your skills! With on-line leaderboards, addictive puzzle gameplay, and a banger soundtrack; see if you can't conquer the HEXAPLEX, wrangle those Power-ups, and maybe even become ruler of the universe along the way! Give it a try... it's HEXA-good!
+HEXA is a unique match-six puzzle game with gameplay that's dead-simple, but tons of fun. Try for a high score in the action-packed Arcade Mode, kick back in the low-stakes Chill Mode, or take on the seeded Daily Run with a dynamic leaderboard! With addictive puzzle gameplay, on-line leaderboards, and a banger soundtrack; see if you can't conquer the HEXAPLEX, wrangle those Power-ups, and maybe even become ruler of the universe along the way. Give it a try... it's HEXA-good!
 
 
 Made by [Rae](https://rae.wtf)
@@ -19,20 +16,24 @@ Made by [Rae](https://rae.wtf)
 Credits available [here](https://rae.wtf/blog/hexa-manual#credits).
 
 
-We think this game is appropriate for everyone, except those who believe hexagons aren't the bestagons.
+We think this game is appropriate for everyone, except those who think hexagons aren't the bestagons.
 
-This game uses the D-pad and A and B buttons, and optionally the Crank. It requires a fair amount of precision and quick thinking. There's an extra mode that lets you practice without a timer, though.
+This game uses the D-pad and A and B buttons, and optionally the Crank. It requires a fair amount of precision and quick thinking.
 
 
+Game manual and credits
 https://rae.wtf/blog/hexa-manual
 
+Version changelog
 https://rae.wtf/blog/hexa-changelog
 
+Gameplay video
+https://www.youtube.com/watch?v=4F4B16T5cno
+
+More stuff by Rae
 https://rae.wtf
 
 
 arcade.gif
 zen.gif
-start.gif
-launch.gif
 hexa.png

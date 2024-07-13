@@ -33,6 +33,7 @@ function savecheck()
     if save.sfx == nil then save.sfx = true end
     if save.flip == nil then save.flip = false end
     if save.crank == nil then save.crank = true end
+    if save.lastdaily == nil then save.lastdaily = {year = 0, month = 0, day = 0} end
     save.score = save.score or 0
 end
 
@@ -48,10 +49,10 @@ function pd.gameWillTerminate()
         local byebyeanim = gfx.animator.new(600, 1, #byebye)
         scenemanager:cleanupscene()
         local sfx = smp.new('audio/sfx/hexa')
+        if not save.sfx then sfx:play() end
         shakies()
         shakies_y()
         gfx.setDrawOffset(0, 0)
-        if not save.sfx then sfx:play() end
         while not byebyeanim:ended() do
             pd.timer.updateTimers()
             img:draw(anim_shakies.value, anim_shakies_y.value)
@@ -67,14 +68,14 @@ function pauseimage(mode)
     else
         local image = gfx.getDisplayImage()
         gfx.pushContext(image)
-            if mode == "arcade" then
+            if mode == "arcade" or mode == "dailyrun" then
                 mask_arcade:draw(0, 0)
             elseif mode == "zen" then
                 mask_zen:draw(0, 0)
             end
         gfx.popContext()
         gfx.pushContext(pause)
-        if mode == "arcade" then
+        if mode == "arcade" or mode == "dailyrun" then
             image:drawScaled(-45, 65, 0.666)
         elseif mode == "zen" then
             image:drawScaled(-33, 65, 0.666)
@@ -155,6 +156,18 @@ function ordinal(num)
     else -- If all those checks passed us by,
         return tostring(num) .. gfx.getLocalizedText("th") -- then it ends in "th".
     end
+end
+
+-- http://lua-users.org/wiki/FormattingNumbers
+function commalize(amount)
+  local formatted = amount
+  while true do
+    formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+    if (k==0) then
+      break
+    end
+  end
+  return formatted
 end
 
 -- This function shakes the screen. int is a number representing intensity. time is a number representing duration

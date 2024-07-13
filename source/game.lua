@@ -36,7 +36,7 @@ function game:init(...)
 					self:endround()
 				end)
 			end
-			if vars.mode == "arcade" and vars.can_do_stuff then
+			if (vars.mode == "arcade" or vars.mode == "dailyrun") and vars.can_do_stuff then
 				menu:addMenuItem(text('endgame'), function()
 					self:endround()
 				end)
@@ -88,7 +88,7 @@ function game:init(...)
 	sprites.code = Tanuk_CodeSequence({pd.kButtonRight, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB}, function() self:boom() end)
 
 	vars = {
-		mode = args[1], -- "arcade" or "zen"
+		mode = args[1], -- "arcade" or "zen" or "dailyrun"
 		tris = {},
 		slot = 1,
 		score = 0,
@@ -217,7 +217,11 @@ function game:init(...)
 	}
 	vars.loseHandlers = {
 		AButtonDown = function()
-			scenemanager:transitionscene(game, vars.mode)
+			if vars.mode == "dailyrun" then
+				scenemanager:transitionscene(highscores, vars.mode)
+			else
+				scenemanager:transitionscene(game, vars.mode)
+			end
 		end,
 
 		BButtonDown = function()
@@ -249,6 +253,13 @@ function game:init(...)
 	vars.anim_bg_stars_x.repeats = true
 	vars.anim_bg_stars_y.repeats = true
 
+	if vars.mode == "dailyrun" then
+		math.randomseed(pd.getGMTTime().year .. pd.getGMTTime().month .. pd.getGMTTime().day)
+		save.lastdaily = pd.getGMTTime()
+	else
+		math.randomseed(playdate.getSecondsSinceEpoch())
+	end
+
 	local newcolor
 	local newpowerup
 	for i = 1, 19 do
@@ -256,7 +267,7 @@ function game:init(...)
 		vars.tris[i] = {index = i, color = newcolor, powerup = newpowerup}
 	end
 
-	if vars.mode == "arcade" then
+	if vars.mode == "arcade" or vars.mode == "dailyrun" then
 		vars.timer = pd.timer.new(45000, 45000, 0)
 		vars.timer.delay = 4000
 		vars.old_timer_value = 45000
@@ -300,7 +311,7 @@ function game:init(...)
 		assets.bg_tile:draw((floor(vars.anim_bg_tile_x.value / 2) * 2) - 1, (floor(vars.anim_bg_tile_y.value / 2) * 2) - 1)
 		assets.stars:draw(vars.anim_bg_stars_x.value, vars.anim_bg_stars_y.value)
 		assets.draw_label:draw(vars.anim_label.value, -13)
-		if vars.mode == "arcade" then
+		if vars.mode == "arcade" or vars.mode == "dailyrun" then
 			gfx.fillRect(268, 50, 132, 60)
 		end
 		gfx.setColor(gfx.kColorWhite)
@@ -335,17 +346,22 @@ function game:init(...)
 	function game_ui:draw()
 		gfx.fillTriangle(0, 0, 115, 0, 0, 200)
 		gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-		if vars.mode == "arcade" then
+		if vars.mode == "arcade" or vars.mode == "dailyrun" then
 			assets.half_circle:drawText(text('score'), 10, 10)
-			assets.full_circle:drawText(vars.score, 10, 25)
-			assets.half_circle:drawText(text('high'), 10, 45)
-			assets.full_circle:drawText((vars.score > save.score and vars.score) or (save.score), 10, 60)
+			assets.full_circle:drawText(commalize(vars.score), 10, 25)
+			if vars.mode == "arcade" then
+				assets.half_circle:drawText(text('high'), 10, 45)
+				assets.full_circle:drawText(commalize((vars.score > save.score and vars.score) or (save.score)), 10, 60)
+			else
+				assets.half_circle:drawText(text('seed'), 10, 45)
+				assets.full_circle:drawText(pd.getGMTTime().year .. pd.getGMTTime().month .. pd.getGMTTime().day, 10, 60)
+			end
 			assets.clock:drawText(ceil(vars.timer.value / 1000), 305, 55)
 		elseif vars.mode == "zen" then
 			assets.half_circle:drawText(text('swaps'), 10, 10)
-			assets.full_circle:drawText(vars.moves, 10, 25)
+			assets.full_circle:drawText(commalize(vars.moves), 10, 25)
 			assets.half_circle:drawText(text('hexas'), 10, 45)
-			assets.full_circle:drawText(vars.hexas, 10, 60)
+			assets.full_circle:drawText(commalize(vars.hexas), 10, 60)
 		end
 		gfx.setImageDrawMode(gfx.kDrawModeCopy)
 		if not vars.can_do_stuff then
@@ -535,13 +551,13 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 			if save.sfx then assets.sfx_select:play() end
 			assets.draw_label = assets.label_double
 			vars.anim_label:resetnew(1200, 400, -100, pd.easingFunctions.linear)
-			if vars.mode == "arcade" then
-				vars.timer:resetnew(min(vars.timer.value + 7500, 60000), min(vars.timer.value + 7500, 60000), 0)
+			if vars.mode == "arcade" or vars.mode == "dailyrun" then
+				vars.timer:resetnew(min(vars.timer.value + 6500, 60000), min(vars.timer.value + 6500, 60000), 0)
 			end
 		else
 			vars.score += 100 * vars.combo
-			if vars.mode == "arcade" then
-				vars.timer:resetnew(min(vars.timer.value + 5000, 60000), min(vars.timer.value + 5000, 60000), 0)
+			if vars.mode == "arcade" or vars.mode == "dailyrun" then
+				vars.timer:resetnew(min(vars.timer.value + 3500, 60000), min(vars.timer.value + 3500, 60000), 0)
 			end
 		end
 		if temp1.powerup == "bomb" or temp2.powerup == "bomb" or temp3.powerup == "bomb" or temp4.powerup == "bomb" or temp5.powerup == "bomb" or temp6.powerup == "bomb" then
@@ -674,17 +690,23 @@ end
 function game:endround()
 	vars.can_do_stuff = false
 	fademusic(1)
-	if vars.mode == "arcade" then
+	if vars.mode == "arcade" or vars.mode == "dailyrun" then
 		vars.timer:pause()
 		if save.sfx then assets.sfx_end:play() end
 		pd.timer.performAfterDelay(2000, function()
-			if vars.score > save.score then save.score = vars.score end
+			pd.scoreboards.addScore(vars.mode, vars.score, function(status, result)
+				if pd.isSimulator == 1 then
+					printTable(status)
+					printTable(result)
+				end
+			end)
+			if vars.score > save.score and vars.mode == "arcade" then save.score = vars.score end
 			if save.sfx then assets.sfx_lose:play() end
 			vars.anim_modal:resetnew(500, 240, 0, pd.easingFunctions.outBack)
 			pd.timer.performAfterDelay(548, function()
 				gfx.pushContext(assets.modal)
 					gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						assets.full_circle:drawTextAligned(text('score1') .. vars.score .. text('score2'), 240, 50, kTextAlignment.center)
+						assets.full_circle:drawTextAligned(text('score1') .. commalize(vars.score) .. text('score2'), 240, 50, kTextAlignment.center)
 					gfx.setImageDrawMode(gfx.kDrawModeCopy)
 				gfx.popContext()
 			end)
@@ -692,9 +714,9 @@ function game:endround()
 				gfx.pushContext(assets.modal)
 					gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
 					if vars.moves == 1 then
-						assets.full_circle:drawTextAligned(text('stats1') .. vars.moves .. text('stats2b'), 240, 90, kTextAlignment.center)
+						assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
 					else
-						assets.full_circle:drawTextAligned(text('stats1') .. vars.moves .. text('stats2a'), 240, 90, kTextAlignment.center)
+						assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
 					end
 					gfx.setImageDrawMode(gfx.kDrawModeCopy)
 				gfx.popContext()
@@ -703,9 +725,9 @@ function game:endround()
 				gfx.pushContext(assets.modal)
 					gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
 					if vars.hexas == 1 then
-						assets.full_circle:drawTextAligned(text('stats3') .. vars.hexas .. text('stats4b'), 240, 105, kTextAlignment.center)
+						assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
 					else
-						assets.full_circle:drawTextAligned(text('stats3') .. vars.hexas .. text('stats4a'), 240, 105, kTextAlignment.center)
+						assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
 					end
 					gfx.setImageDrawMode(gfx.kDrawModeCopy)
 				gfx.popContext()
@@ -721,7 +743,11 @@ function game:endround()
 				pd.inputHandlers.push(vars.loseHandlers, true)
 				gfx.pushContext(assets.modal)
 					gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-					assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
+					if vars.mode == "dailyrun" then
+						assets.half_circle:drawText(text('showsdailyscores') .. ' ' .. text('back'), 40, 205)
+					else
+						assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
+					end
 					gfx.setImageDrawMode(gfx.kDrawModeCopy)
 				gfx.popContext()
 			end)
@@ -742,9 +768,9 @@ function game:endround()
 				gfx.pushContext(assets.modal)
 					gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
 					if vars.moves == 1 then
-						assets.full_circle:drawTextAligned(text('stats1') .. vars.moves .. text('stats2b'), 240, 90, kTextAlignment.center)
+						assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
 					else
-						assets.full_circle:drawTextAligned(text('stats1') .. vars.moves .. text('stats2a'), 240, 90, kTextAlignment.center)
+						assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
 					end
 					gfx.setImageDrawMode(gfx.kDrawModeCopy)
 				gfx.popContext()
@@ -753,9 +779,9 @@ function game:endround()
 				gfx.pushContext(assets.modal)
 					gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
 					if vars.hexas == 1 then
-						assets.full_circle:drawTextAligned(text('stats3') .. vars.hexas .. text('stats4b'), 240, 105, kTextAlignment.center)
+						assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
 					else
-						assets.full_circle:drawTextAligned(text('stats3') .. vars.hexas .. text('stats4a'), 240, 105, kTextAlignment.center)
+						assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
 					end
 					gfx.setImageDrawMode(gfx.kDrawModeCopy)
 				gfx.popContext()
@@ -800,7 +826,7 @@ function game:update()
 			end
 		end
 	end
-	if vars.mode == "arcade" then
+	if vars.mode == "arcade" or vars.mode == "dailyrun" then
 		if vars.old_timer_value > 10000 and vars.timer.value <= 10000 then
 			shakies(500, 1)
 			shakies_y(750, 1)
