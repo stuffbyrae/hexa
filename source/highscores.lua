@@ -146,6 +146,9 @@ function highscores:refreshboards(mode)
 		vars.best = {}
 		vars.loading = true
 		vars.mode = mode
+		if vars.mode == "arcade" and save.score ~= 0 then
+			pd.scoreboards.addScore("arcade", 0)
+		end
 		if pd.isSimulator == 1 then
 			pd.scoreboards.getScoreboards(function(status, result)
 				printTable(status)
