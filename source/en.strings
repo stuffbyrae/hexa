@@ -61,7 +61,7 @@
 "dailyrun_message10" = "Prepare for the day ahead!"
 
 "howtoplay" = "How to Play"
-"howtoplaylist" = "Use the D-pad to move your cursor; and use\nthe buttons (or Crank) to turn the selection.\n\nA full hexagon of similarly-colored triangles is\ncalled a HEXA. Score those to earn points.\nBombs blow up all other triangles when HEXA'd.\n2x Tiles will earn you double points for a HEXA.\nWild Tiles will work with any other match.\n\nFor more help, please consult the game manual:\nhttps://rae.wtf/blog/hexa-manual\n\nGet out there and conquer the universe!"
+"howtoplaylist" = "Use the d-pad to move your cursor; and use\nthe buttons (or Crank) to turn the selection.\n\nA full hexagon of similarly-colored triangles is\ncalled a HEXA. Score those to earn points.\nBombs blow up all other triangles when HEXA'd.\n2x Tiles will earn you double points for a HEXA.\nWild Tiles will work with any other match.\n\nFor more help, please consult the game manual:\nhttps://rae.wtf/blog/hexa-manual\n\nGet out there and conquer the universe!"
 
 "options" = "Options"
 "options_music" = "Music: "
@@ -87,6 +87,11 @@
 "showsdailyscores" = "A shows scores for today."
 "emptyscores_arcade" = "No scores registered!"
 "emptyscores_dailyrun" = "Nobody's played yet today!"
+"st" = "st"
+"nd" = "nd"
+"rd" = "rd"
+"username" = "Hey, change your username!\nhttps://play.date/account"
+"refresh" = "refresh"
 "lbscore1" = "With a score of "
 "lbscore2" = ", you're "
 "lbscore3" = "!"

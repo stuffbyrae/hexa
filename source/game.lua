@@ -85,8 +85,6 @@ function game:init(...)
 
 	assets.draw_label = assets.label_double
 
-	sprites.code = Tanuk_CodeSequence({pd.kButtonRight, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB}, function() self:boom() end)
-
 	vars = {
 		mode = args[1], -- "arcade" or "zen" or "dailyrun"
 		tris = {},
@@ -373,6 +371,7 @@ function game:init(...)
 
 	sprites.tris = game_tris()
 	sprites.ui = game_ui()
+	sprites.code = Tanuk_CodeSequence({pd.kButtonRight, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB}, function() self:boom() end)
 	self:add()
 end
 
@@ -551,13 +550,13 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 			if save.sfx then assets.sfx_select:play() end
 			assets.draw_label = assets.label_double
 			vars.anim_label:resetnew(1200, 400, -100, pd.easingFunctions.linear)
-			if vars.mode == "arcade" or vars.mode == "dailyrun" then
-				vars.timer:resetnew(min(vars.timer.value + 6500, 60000), min(vars.timer.value + 6500, 60000), 0)
+			if vars.mode == "arcade" or vars.mode == "dailyrun" and vars.can_do_stuff then
+				vars.timer:resetnew(min(vars.timer.value + 3500, 60000), min(vars.timer.value + 3500, 60000), 0)
 			end
 		else
 			vars.score += 100 * vars.combo
-			if vars.mode == "arcade" or vars.mode == "dailyrun" then
-				vars.timer:resetnew(min(vars.timer.value + 3500, 60000), min(vars.timer.value + 3500, 60000), 0)
+			if vars.mode == "arcade" or vars.mode == "dailyrun" and vars.can_do_stuff then
+				vars.timer:resetnew(min(vars.timer.value + 2000, 60000), min(vars.timer.value + 2000, 60000), 0)
 			end
 		end
 		if temp1.powerup == "bomb" or temp2.powerup == "bomb" or temp3.powerup == "bomb" or temp4.powerup == "bomb" or temp5.powerup == "bomb" or temp6.powerup == "bomb" then
@@ -694,12 +693,14 @@ function game:endround()
 		vars.timer:pause()
 		if save.sfx then assets.sfx_end:play() end
 		pd.timer.performAfterDelay(2000, function()
-			pd.scoreboards.addScore(vars.mode, vars.score, function(status, result)
-				if pd.isSimulator == 1 then
-					printTable(status)
-					printTable(result)
-				end
-			end)
+			if catalog then
+				pd.scoreboards.addScore(vars.mode, vars.score, function(status, result)
+					if pd.isSimulator == 1 then
+						printTable(status)
+						printTable(result)
+					end
+				end)
+			end
 			if vars.score > save.score and vars.mode == "arcade" then save.score = vars.score end
 			if save.sfx then assets.sfx_lose:play() end
 			vars.anim_modal:resetnew(500, 240, 0, pd.easingFunctions.outBack)

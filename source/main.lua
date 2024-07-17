@@ -21,6 +21,11 @@ local mask_zen <const> = gfx.image.new('images/mask_zen')
 local pause <const> = gfx.image.new('images/pause')
 local pause_luci <const> = gfx.image.new('images/pause_luci')
 
+catalog = false
+if pd.metadata.bundleID == "wtf.rae.hexa" then
+    catalog = true
+end
+
 pd.display.setRefreshRate(30)
 gfx.setBackgroundColor(gfx.kColorBlack)
 gfx.setLineWidth(3)
@@ -43,23 +48,6 @@ savecheck()
 -- When the game closes...
 function pd.gameWillTerminate()
     pd.datastore.write(save)
-    if vars.can_do_stuff then
-        local img = gfx.getDisplayImage()
-        local byebye = gfx.imagetable.new('images/byebye')
-        local byebyeanim = gfx.animator.new(600, 1, #byebye)
-        scenemanager:cleanupscene()
-        local sfx = smp.new('audio/sfx/hexa')
-        if not save.sfx then sfx:play() end
-        shakies()
-        shakies_y()
-        gfx.setDrawOffset(0, 0)
-        while not byebyeanim:ended() do
-            pd.timer.updateTimers()
-            img:draw(anim_shakies.value, anim_shakies_y.value)
-            byebye:drawImage(math.floor(byebyeanim:currentValue()), anim_shakies.value, anim_shakies_y.value)
-            pd.display.flush()
-        end
-    end
 end
 
 function pauseimage(mode)

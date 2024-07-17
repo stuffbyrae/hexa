@@ -15,6 +15,11 @@ function highscores:init(...)
 		pauseimage()
 		menu:removeAllMenuItems()
 		if not scenemanager.transitioning then
+			if not vars.loading then
+				menu:addMenuItem(text('refresh'), function()
+					self:refreshboards(vars.mode)
+				end)
+			end
 			menu:addMenuItem(text('goback'), function()
 				scenemanager:transitionscene(title)
 			end)
@@ -78,6 +83,14 @@ function highscores:init(...)
 	vars.anim_stars_large_x.repeats = true
 	vars.anim_stars_large_y.repeats = true
 
+	if pd.getReduceFlashing() then
+		vars.blink = {}
+		vars.blink.value = 1
+	else
+		vars.blink = pd.timer.new(1000, 1.99, 0.5)
+		vars.blink.repeats = true
+	end
+
 	gfx.sprite.setBackgroundDrawingCallback(function(x, y, width, height)
 		assets.stars_small:draw(vars.anim_stars_small_x.value, vars.anim_stars_small_y.value)
 		assets.stars_large:draw(vars.anim_stars_large_x.value, vars.anim_stars_large_y.value)
@@ -100,8 +113,8 @@ function highscores:init(...)
 			end
 		end
 		if vars.result.scores ~= nil and next(vars.result.scores) ~= nil then
-			for _, v in ipairs(vars.results.scores) do
-				if v.rank <= 9 then
+			for _, v in ipairs(vars.result.scores) do
+				if ((vars.best.player ~= nil and string.len(vars.best.player) == 16 and tonumber(vars.best.player)) and v.rank <= 8) or v.rank <= 9 then
 					assets.half_circle:drawTextAligned(ordinal(v.rank), 80, 30 + (15 * v.rank), kTextAlignment.right)
 					assets.full_circle:drawText(v.player, 90, 30 + (15 * v.rank))
 					assets.half_circle:drawTextAligned(commalize(v.value), 340, 30 + (15 * v.rank), kTextAlignment.right)
@@ -117,7 +130,13 @@ function highscores:init(...)
 			end
 		end
 		if vars.best.rank ~= nil then
-			assets.full_circle:drawTextAligned(text('lbscore1') .. commalize(vars.best.value) .. text('lbscore2') .. ordinal(1) .. text('lbscore3'), 200, 185, kTextAlignment.center)
+			if string.len(vars.best.player) == 16 and tonumber(vars.best.player) then
+				if math.floor(vars.blink.value) == 1 then
+					assets.full_circle:drawTextAligned(text('username'), 200, 170, kTextAlignment.center)
+				end
+			else
+				assets.full_circle:drawTextAligned(text('lbscore1') .. commalize(vars.best.value) .. text('lbscore2') .. ordinal(1) .. text('lbscore3'), 200, 185, kTextAlignment.center)
+			end
 		end
 		if vars.loading then
 			assets.half_circle:drawText(text('inasec'), 65, 205)
