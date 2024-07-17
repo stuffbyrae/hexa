@@ -57,7 +57,6 @@ function title:init(...)
 		anim_stars_large_x = pd.timer.new(2500, 0, -399),
 		anim_stars_large_y = pd.timer.new(1250, 0, -239),
 		dailyrunnable = false,
-		selections = {'arcademode', 'zenmode', 'dailyrun', 'options', 'credits'},
 		selection = 0,
 	}
 	vars.titleHandlers = {
@@ -96,6 +95,8 @@ function title:init(...)
 				end
 			elseif vars.selections[vars.selection] == "highscores" then
 				scenemanager:transitionscene(highscores, "arcade")
+			elseif vars.selections[vars.selection] == "howtoplay" then
+				scenemanager:transitionscene(howtoplay)
 			elseif vars.selections[vars.selection] == "options" then
 				scenemanager:transitionscene(options)
 			elseif vars.selections[vars.selection] == "credits" then
@@ -111,6 +112,12 @@ function title:init(...)
 		pd.inputHandlers.push(vars.titleHandlers)
 		vars.selection = 1
 	end)
+
+	if catalog then
+		vars.selections = {'arcademode', 'zenmode', 'dailyrun', 'highscores', 'howtoplay', 'options', 'credits'}
+	else
+		vars.selections = {'arcademode', 'zenmode', 'dailyrun', 'howtoplay', 'options', 'credits'}
+	end
 
 	if vars.animate then
 		vars.anim_title = pd.timer.new(500, 200, 0, pd.easingFunctions.outBack)
@@ -129,23 +136,44 @@ function title:init(...)
 		assets.stars_large:draw(vars.anim_stars_large_x.value, vars.anim_stars_large_y.value)
 		assets.logo:draw(0, 0)
 		gfx.setDitherPattern(0.25, gfx.image.kDitherTypeBayer2x2)
-		gfx.fillRect(250 + vars.anim_title.value, 112, 200, 160)
-		gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-		if pd.getGMTTime().hour < 23 then
-			assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (24 - pd.getGMTTime().hour) .. text('hrs'), 265 + vars.anim_title.value, 170)
-		else
-			if pd.getGMTTime().minute < 59 then
-				assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (60 - pd.getGMTTime().minute) .. text('mins'), 265 + vars.anim_title.value, 170)
+		if catalog then
+			gfx.fillRect(250 + vars.anim_title.value, 72, 200, 160)
+			gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+			if pd.getGMTTime().hour < 23 then
+				assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (24 - pd.getGMTTime().hour) .. text('hrs'), 265 + vars.anim_title.value, 130)
+			elseif pd.getGMTTime().minute < 59 then
+				assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (60 - pd.getGMTTime().minute) .. text('mins'), 265 + vars.anim_title.value, 130)
 			else
-				assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (60 - pd.getGMTTime().second) .. text('secs'), 265 + vars.anim_title.value, 170)
+				assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (60 - pd.getGMTTime().second) .. text('secs'), 265 + vars.anim_title.value, 130)
 			end
+			assets.half_circle:drawTextAligned(text('arcademode'), 385 + vars.anim_title.value, 90, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('zenmode'), 385 + vars.anim_title.value, 110, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('dailyrun'), 385 + vars.anim_title.value, 130, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('highscores'), 385 + vars.anim_title.value, 150, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('howtoplay'), 385 + vars.anim_title.value, 170, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('options'), 385 + vars.anim_title.value, 190, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('credits'), 385 + vars.anim_title.value, 210, kTextAlignment.right)
+			assets.full_circle:drawTextAligned((vars.selection > 0 and text(vars.selections[vars.selection])) or (' '), 385 + vars.anim_title.value, 70 + (20 * vars.selection), kTextAlignment.right)
+		else
+			gfx.fillRect(250 + vars.anim_title.value, 92, 200, 160)
+			gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+			if pd.getGMTTime().hour < 23 then
+				assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (24 - pd.getGMTTime().hour) .. text('hrs'), 265 + vars.anim_title.value, 150)
+			else
+				if pd.getGMTTime().minute < 59 then
+					assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (60 - pd.getGMTTime().minute) .. text('mins'), 265 + vars.anim_title.value, 150)
+				else
+					assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (60 - pd.getGMTTime().second) .. text('secs'), 265 + vars.anim_title.value, 150)
+				end
+			end
+			assets.half_circle:drawTextAligned(text('arcademode'), 385 + vars.anim_title.value, 110, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('zenmode'), 385 + vars.anim_title.value, 130, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('dailyrun'), 385 + vars.anim_title.value, 150, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('howtoplay'), 385 + vars.anim_title.value, 170, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('options'), 385 + vars.anim_title.value, 190, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('credits'), 385 + vars.anim_title.value, 210, kTextAlignment.right)
+			assets.full_circle:drawTextAligned((vars.selection > 0 and text(vars.selections[vars.selection])) or (' '), 385 + vars.anim_title.value, 90 + (20 * vars.selection), kTextAlignment.right)
 		end
-		assets.half_circle:drawTextAligned(text('arcademode'), 385 + vars.anim_title.value, 130, kTextAlignment.right)
-		assets.half_circle:drawTextAligned(text('zenmode'), 385 + vars.anim_title.value, 150, kTextAlignment.right)
-		assets.half_circle:drawTextAligned(text('dailyrun'), 385 + vars.anim_title.value, 170, kTextAlignment.right)
-		assets.half_circle:drawTextAligned(text('options'), 385 + vars.anim_title.value, 190, kTextAlignment.right)
-		assets.half_circle:drawTextAligned(text('credits'), 385 + vars.anim_title.value, 210, kTextAlignment.right)
-		assets.full_circle:drawTextAligned((vars.selection > 0 and text(vars.selections[vars.selection])) or (' '), 385 + vars.anim_title.value, 110 + (20 * vars.selection), kTextAlignment.right)
 		assets.half_circle:drawText(text('move') .. ' ' .. text('select'), 10 - vars.anim_title.value, 220)
 		gfx.setImageDrawMode(gfx.kDrawModeCopy)
 	end)

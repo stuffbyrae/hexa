@@ -44,19 +44,6 @@ function highscores:init(...)
 		result = {},
 		best = {},
 		loading = false,
-		test = {
-			scores = {
-				{ player = "rae", rank = 1, value = 1000000 },
-				{ player = "hi", rank = 2, value = 900000 },
-				{ player = "maxingoutthelimitYES", rank = 3, value = 800000 },
-				{ player = "@.+-_symblchamp_-+.@", rank = 4, value = 293811 },
-				{ player = "mr123456789", rank = 5, value = 200000 },
-				{ player = "uvwxyz", rank = 6, value = 50000 },
-				{ player = "abcdefghijklmnopqrst", rank = 7, value = 25000 },
-				{ player = "ABCDEFGHIJKLMNOPQRST", rank = 8, value = 10000 },
-				{ player = "UVWXYZ", rank = 9, value = 2 },
-			}
-		},
 	}
 	vars.highscoresHandlers = {
 		AButtonDown = function()
@@ -104,12 +91,10 @@ function highscores:init(...)
 			assets.full_circle:drawTextAligned(text('dailyrun'), 200, 10, kTextAlignment.center)
 			if pd.getGMTTime().hour < 23 then
 				assets.half_circle:drawTextAligned(text('todaysscores') .. '   ⏰ ' .. (24 - pd.getGMTTime().hour) .. text('hrs'), 200, 25, kTextAlignment.center)
+			elseif pd.getGMTTime().minute < 59 then
+				assets.half_circle:drawTextAligned(text('todaysscores') .. '   ⏰ ' .. (60 - pd.getGMTTime().minute) .. text('mins'), 200, 25, kTextAlignment.center)
 			else
-				if pd.getGMTTime().minute < 59 then
-					assets.half_circle:drawTextAligned(text('todaysscores') .. '   ⏰ ' .. (60 - pd.getGMTTime().minute) .. text('mins'), 200, 25, kTextAlignment.center)
-				else
-					assets.half_circle:drawTextAligned(text('todaysscores') .. '   ⏰ ' .. (60 - pd.getGMTTime().second) .. text('secs'), 200, 25, kTextAlignment.center)
-				end
+				assets.half_circle:drawTextAligned(text('todaysscores') .. '   ⏰ ' .. (60 - pd.getGMTTime().second) .. text('secs'), 200, 25, kTextAlignment.center)
 			end
 		end
 		if vars.result.scores ~= nil and next(vars.result.scores) ~= nil then
@@ -135,7 +120,7 @@ function highscores:init(...)
 					assets.full_circle:drawTextAligned(text('username'), 200, 170, kTextAlignment.center)
 				end
 			else
-				assets.full_circle:drawTextAligned(text('lbscore1') .. commalize(vars.best.value) .. text('lbscore2') .. ordinal(1) .. text('lbscore3'), 200, 185, kTextAlignment.center)
+				assets.full_circle:drawTextAligned(text('lbscore1') .. commalize(vars.best.value) .. text('lbscore2') .. ordinal(vars.best.rank) .. text('lbscore3'), 200, 185, kTextAlignment.center)
 			end
 		end
 		if vars.loading then
@@ -177,9 +162,9 @@ function highscores:refreshboards(mode)
 			else
 				vars.result = "fail"
 			end
-			vars.loading = false
 		end)
 		pd.scoreboards.getPersonalBest(vars.mode, function(status, result)
+			vars.loading = false
 			if status.code == "OK" then
 				vars.best = result
 			end

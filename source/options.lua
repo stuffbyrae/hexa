@@ -67,9 +67,6 @@ function options:init(...)
 			else
 				if save.sfx then assets.sfx_bonk:play() end
 			end
-			if vars.resetprogress < 4 then
-				vars.resetprogress = 1
-			end
 		end,
 
 		BButtonDown = function()
@@ -146,6 +143,9 @@ end
 function options:update()
 	local ticks = pd.getCrankTicks(6)
 	if ticks ~= 0 and vars.selection > 0 then
+		if ticks < 0 and vars.resetprogress > 1 then
+			vars.resetprogress = 1
+		end
 		if save.sfx then
 			if ticks < 0 and vars.selection == 1 then
 				assets.sfx_bonk:play()

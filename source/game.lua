@@ -112,18 +112,18 @@ function game:init(...)
 				lastdir = false
 				if vars.slot == 2 then
 					vars.slot = 1
-					vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 106, pd.easingFunctions.outBack)
-					vars.anim_cursor_y:resetnew(150, vars.anim_cursor_y.value, 42, pd.easingFunctions.outBack)
+					vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 106, pd.easingFunctions.outBack)
+					vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 42, pd.easingFunctions.outBack)
 					if save.sfx then assets.sfx_move:play() end
 				elseif vars.slot == 5 then
 					vars.slot = 4
-					vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 137, pd.easingFunctions.outBack)
-					vars.anim_cursor_y:resetnew(137, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
+					vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 137, pd.easingFunctions.outBack)
+					vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
 					if save.sfx then assets.sfx_move:play() end
 				elseif vars.slot == 4 then
 					vars.slot = 3
-					vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 78, pd.easingFunctions.outBack)
-					vars.anim_cursor_y:resetnew(150, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
+					vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 78, pd.easingFunctions.outBack)
+					vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
 					if save.sfx then assets.sfx_move:play() end
 				else
 					if save.sfx then assets.sfx_bonk:play() end
@@ -136,18 +136,18 @@ function game:init(...)
 				lastdir = true
 				if vars.slot == 1 then
 					vars.slot = 2
-					vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 166, pd.easingFunctions.outBack)
-					vars.anim_cursor_y:resetnew(150, vars.anim_cursor_y.value, 42, pd.easingFunctions.outBack)
+					vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 166, pd.easingFunctions.outBack)
+					vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 42, pd.easingFunctions.outBack)
 					if save.sfx then assets.sfx_move:play() end
 				elseif vars.slot == 3 then
 					vars.slot = 4
-					vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 137, pd.easingFunctions.outBack)
-					vars.anim_cursor_y:resetnew(150, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
+					vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 137, pd.easingFunctions.outBack)
+					vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
 					if save.sfx then assets.sfx_move:play() end
 				elseif vars.slot == 4 then
 					vars.slot = 5
-					vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 197, pd.easingFunctions.outBack)
-					vars.anim_cursor_y:resetnew(150, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
+					vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 197, pd.easingFunctions.outBack)
+					vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
 					if save.sfx then assets.sfx_move:play() end
 				else
 					if save.sfx then assets.sfx_bonk:play() end
@@ -160,13 +160,13 @@ function game:init(...)
 				if vars.slot == 3 or vars.slot == 4 or vars.slot == 5 then
 					if lastdir then
 						vars.slot = 2
-						vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 166, pd.easingFunctions.outBack)
-						vars.anim_cursor_y:resetnew(150, vars.anim_cursor_y.value, 42, pd.easingFunctions.outBack)
+						vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 166, pd.easingFunctions.outBack)
+						vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 42, pd.easingFunctions.outBack)
 						if save.sfx then assets.sfx_move:play() end
 					else
 						vars.slot = 1
-						vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 106, pd.easingFunctions.outBack)
-						vars.anim_cursor_y:resetnew(150, vars.anim_cursor_y.value, 42, pd.easingFunctions.outBack)
+						vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 106, pd.easingFunctions.outBack)
+						vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 42, pd.easingFunctions.outBack)
 						if save.sfx then assets.sfx_move:play() end
 					end
 				else
@@ -179,13 +179,13 @@ function game:init(...)
 			if vars.can_do_stuff then
 				if vars.slot == 1 then
 					vars.slot = 3
-					vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 78, pd.easingFunctions.outBack)
-					vars.anim_cursor_y:resetnew(150, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
+					vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 78, pd.easingFunctions.outBack)
+					vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
 					if save.sfx then assets.sfx_move:play() end
 				elseif vars.slot == 2 then
 					vars.slot = 5
-					vars.anim_cursor_x:resetnew(150, vars.anim_cursor_x.value, 197, pd.easingFunctions.outBack)
-					vars.anim_cursor_y:resetnew(150, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
+					vars.anim_cursor_x:resetnew(80, vars.anim_cursor_x.value, 197, pd.easingFunctions.outBack)
+					vars.anim_cursor_y:resetnew(80, vars.anim_cursor_y.value, 92, pd.easingFunctions.outBack)
 					if save.sfx then assets.sfx_move:play() end
 				else
 					if save.sfx then assets.sfx_bonk:play() end
@@ -550,13 +550,13 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 			if save.sfx then assets.sfx_select:play() end
 			assets.draw_label = assets.label_double
 			vars.anim_label:resetnew(1200, 400, -100, pd.easingFunctions.linear)
-			if vars.mode == "arcade" or vars.mode == "dailyrun" and vars.can_do_stuff then
-				vars.timer:resetnew(min(vars.timer.value + 3500, 60000), min(vars.timer.value + 3500, 60000), 0)
+			if (vars.mode == "arcade" or vars.mode == "dailyrun") and vars.can_do_stuff then
+				vars.timer:resetnew(min(vars.timer.value + 7500, 60000), min(vars.timer.value + 7500, 60000), 0)
 			end
 		else
 			vars.score += 100 * vars.combo
-			if vars.mode == "arcade" or vars.mode == "dailyrun" and vars.can_do_stuff then
-				vars.timer:resetnew(min(vars.timer.value + 2000, 60000), min(vars.timer.value + 2000, 60000), 0)
+			if (vars.mode == "arcade" or vars.mode == "dailyrun") and vars.can_do_stuff then
+				vars.timer:resetnew(min(vars.timer.value + 4500, 60000), min(vars.timer.value + 4500, 60000), 0)
 			end
 		end
 		if temp1.powerup == "bomb" or temp2.powerup == "bomb" or temp3.powerup == "bomb" or temp4.powerup == "bomb" or temp5.powerup == "bomb" or temp6.powerup == "bomb" then
@@ -694,12 +694,23 @@ function game:endround()
 		if save.sfx then assets.sfx_end:play() end
 		pd.timer.performAfterDelay(2000, function()
 			if catalog then
-				pd.scoreboards.addScore(vars.mode, vars.score, function(status, result)
-					if pd.isSimulator == 1 then
-						printTable(status)
-						printTable(result)
+				if vars.mode == "dailyrun" then
+					if save.lastdaily.year == pd.getGMTTime().year and save.lastdaily.month == pd.getGMTTime().month and save.lastdaily.day == pd.getGMTTime().day then
+						pd.scoreboards.addScore(vars.mode, vars.score, function(status, result)
+							if pd.isSimulator == 1 then
+								printTable(status)
+								printTable(result)
+							end
+						end)
 					end
-				end)
+				elseif vars.mode == "arcade" then
+					pd.scoreboards.addScore(vars.mode, vars.score, function(status, result)
+						if pd.isSimulator == 1 then
+							printTable(status)
+							printTable(result)
+						end
+					end)
+				end
 			end
 			if vars.score > save.score and vars.mode == "arcade" then save.score = vars.score end
 			if save.sfx then assets.sfx_lose:play() end
