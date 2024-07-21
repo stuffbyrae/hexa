@@ -548,7 +548,7 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 					assets.draw_label = nil
 				end
 				if (vars.mode ~= "zen") and vars.can_do_stuff then
-					vars.timer:resetnew(min(vars.timer.value + (12000 * math.exp(-0.09 * vars.hexas)) + 3500, 60000), min(vars.timer.value + (12000 * math.exp(-0.09 * vars.hexas)) + 3500, 60000), 0)
+					vars.timer:resetnew(min(vars.timer.value + (11000 * math.exp(-0.105 * vars.hexas)) + 2750, 60000), min(vars.timer.value + (11000 * math.exp(-0.105 * vars.hexas)) + 2750, 60000), 0)
 				end
 			else
 				if (temp1.color == "white" and temp1.powerup ~= "wild") or (temp2.color == "white" and temp2.powerup ~= "wild") or (temp3.color == "white" and temp3.powerup ~= "wild") or (temp4.color == "white" and temp4.powerup ~= "wild") or (temp5.color == "white" and temp5.powerup ~= "wild") or (temp6.color == "white" and temp6.powerup ~= "wild") then
@@ -559,7 +559,7 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 					vars.score += 200 * vars.combo
 				end
 				if (vars.mode ~= "zen") and vars.can_do_stuff then
-					vars.timer:resetnew(min(vars.timer.value + (8000 * math.exp(-0.09 * vars.hexas)) + 2500, 60000), min(vars.timer.value + (8000 * math.exp(-0.09 * vars.hexas)) + 2500, 60000), 0)
+					vars.timer:resetnew(min(vars.timer.value + (7000 * math.exp(-0.105 * vars.hexas)) + 1750, 60000), min(vars.timer.value + (7000 * math.exp(-0.105 * vars.hexas)) + 1750, 60000), 0)
 				end
 			end
 			vars.score += 10 * vars.movesbonus
