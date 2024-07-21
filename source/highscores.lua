@@ -21,7 +21,7 @@ function highscores:init(...)
 				end)
 			end
 			menu:addMenuItem(text('goback'), function()
-				scenemanager:transitionscene(title)
+				scenemanager:transitionscene(title, false, 'highscores')
 			end)
 		end
 	end
@@ -44,6 +44,7 @@ function highscores:init(...)
 		result = {},
 		best = {},
 		loading = false,
+		debug = false,
 	}
 	vars.highscoresHandlers = {
 		AButtonDown = function()
@@ -56,7 +57,7 @@ function highscores:init(...)
 
 		BButtonDown = function()
 			if save.sfx then assets.sfx_back:play() end
-			scenemanager:transitionscene(title)
+			scenemanager:transitionscene(title, false, 'highscores')
 		end
 	}
 	pd.timer.performAfterDelay(scenemanager.transitiontime, function()
@@ -85,7 +86,7 @@ function highscores:init(...)
 		gfx.fillRect(0, 0, 400, 240)
 		gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
 		if vars.mode == "arcade" then
-			assets.full_circle:drawTextAligned(text('arcademode'), 200, 10, kTextAlignment.center)
+			assets.full_circle:drawTextAligned(text('arcade'), 200, 10, kTextAlignment.center)
 			assets.half_circle:drawTextAligned(text('highscores'), 200, 25, kTextAlignment.center)
 		elseif vars.mode == "dailyrun" then
 			assets.full_circle:drawTextAligned(text('dailyrun'), 200, 10, kTextAlignment.center)
@@ -97,7 +98,7 @@ function highscores:init(...)
 				assets.half_circle:drawTextAligned(text('todaysscores') .. '   ⏰ ' .. (60 - pd.getGMTTime().second) .. text('secs'), 200, 25, kTextAlignment.center)
 			end
 		end
-		if vars.result.scores ~= nil and next(vars.result.scores) ~= nil then
+		if vars.result.scores ~= nil and next(vars.result.scores) ~= nil and not vars.loading then
 			for _, v in ipairs(vars.result.scores) do
 				if ((vars.best.player ~= nil and string.len(vars.best.player) == 16 and tonumber(vars.best.player)) and v.rank <= 8) or v.rank <= 9 then
 					assets.half_circle:drawTextAligned(ordinal(v.rank), 80, 30 + (15 * v.rank), kTextAlignment.right)
@@ -147,16 +148,32 @@ function highscores:refreshboards(mode)
 		vars.loading = true
 		vars.mode = mode
 		if vars.mode == "arcade" and save.score ~= 0 then
-			pd.scoreboards.addScore("arcade", 0)
+			pd.scoreboards.addScore("arcade", 0, function(status, result)
+				if vars.debug then
+					print('--- Arcade fake score check ---')
+					printTable(status)
+					printTable(result)
+				end
+			end)
+		elseif vars.mode == "dailyrun" and save.lastdaily.score ~= 0 and save.lastdaily.sent == false and (save.lastdaily.year == pd.getGMTTime().year and save.lastdaily.month == pd.getGMTTime().month and save.lastdaily.day == pd.getGMTTime().day) then
+			pd.scoreboards.addScore("dailyrun", 0, function(status, result)
+				if vars.debug then
+					print('--- Daily fake score check ---')
+					printTable(status)
+					printTable(result)
+				end
+			end)
 		end
-		if pd.isSimulator == 1 then
+		if vars.debug then
 			pd.scoreboards.getScoreboards(function(status, result)
+				print('--- All scoreboards ---')
 				printTable(status)
 				printTable(result)
 			end)
 		end
 		pd.scoreboards.getScores(vars.mode, function(status, result)
-			if pd.isSimulator == 1 then
+			if vars.debug then
+				print('--- ' .. vars.mode .. ' scoreboard ---')
 				printTable(status)
 				printTable(result)
 			end
@@ -168,6 +185,11 @@ function highscores:refreshboards(mode)
 		end)
 		pd.scoreboards.getPersonalBest(vars.mode, function(status, result)
 			vars.loading = false
+			if vars.debug then
+				print('--- ' .. vars.mode .. ' personal best ---')
+				printTable(status)
+				printTable(result)
+			end
 			if status.code == "OK" then
 				vars.best = result
 			end

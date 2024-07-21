@@ -16,7 +16,7 @@ function credits:init(...)
 		menu:removeAllMenuItems()
 		if not scenemanager.transitioning then
 			menu:addMenuItem(text('goback'), function()
-				scenemanager:transitionscene(title)
+				scenemanager:transitionscene(title, false, 'credits')
 			end)
 		end
 	end
@@ -39,7 +39,7 @@ function credits:init(...)
 	vars.creditsHandlers = {
 		BButtonDown = function()
 			if save.sfx then assets.sfx_back:play() end
-			scenemanager:transitionscene(title)
+			scenemanager:transitionscene(title, false, 'credits')
 		end
 	}
 	pd.timer.performAfterDelay(scenemanager.transitiontime, function()

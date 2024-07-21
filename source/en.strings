@@ -1,5 +1,5 @@
-"arcademode" = "Arcade Mode"
-"zenmode" = "Chill Mode"
+"arcade" = "Arcade Mode"
+"zen" = "Chill Mode"
 "dailyrun" = "Daily Run"
 "hrs" = "h"
 "mins" = "m"
@@ -12,8 +12,8 @@
 "hexas" = "HEXAs"
 "imdone" = "i'm done!"
 "endgame" = "end game"
+"restart" = "restart game"
 "flip" = "flip rotation"
-"crank" = "use crank"
 "goback" = "go back"
 
 "highscores" = "High Scores"
@@ -61,13 +61,20 @@
 "dailyrun_message10" = "Prepare for the day ahead!"
 
 "howtoplay" = "How to Play"
-"howtoplaylist" = "Use the d-pad to move your cursor; and use\nthe buttons (or Crank) to turn the selection.\n\nA full hexagon of similarly-colored triangles is\ncalled a HEXA. Score those to earn points.\nBombs blow up all other triangles when HEXA'd.\n2x Tiles will earn you double points for a HEXA.\nWild Tiles will work with any other match.\n\nFor more help, please consult the game manual:\nhttps://rae.wtf/blog/hexa-manual\n\nGet out there and conquer the universe!"
+"manual1" = "You're the commander of Starship HEXA,\nthe head of a space fleet dead-set on\ntaking over the universe.\n\nYou're well on your way to\nassuming control of everything\nthat is and shall be, but\nyour attack methods\nare a bit...unorthodox.\n\nWe can't dwell on it\nfor too long, though, so get out\nthere and match those hexagons!"
+"manual2" = "The main game board is called the HEXAPLEX.\nThis is where gameplay takes place.\n\nUse the D-pad to move your\ncursor along the five\nhexagons within the grid.\n\nUse the A and B buttons to\nturn the hexagon clockwise\nor counter-clockwise.\n\n(The crank can also be used,\ndepending on the setting.)"
+"manual3" = "\nA full hexagon of like-colored\ntriangles is called a HEXA.\nMatch these to earn points.\n\nManipulate the HEXAPLEX\nto create as many HEXA\nmatches as you can.\n\nYou'll earn a varying amount\nof points depending on\nhow well you perform."
+"manual4" = "\nThere are three colors of\ntriangle in the HEXAPLEX.\n\nBlack triangles are worth\nthe most points, giving\nyou 200 per HEXA match.\n\nGray triangles give you\n150 points per HEXA.\n\nWhite triangles give only\n100 points per HEXA."
+"manual5" = "\nVarious Power-ups are also here\nto give you an advantage.\n\n2x Tiles reward double\npoints when in a match.\nBombs will blow up the\nentire grid when in a match.\nWild Tiles are compatible\nwith any other color.\n\n(Power-ups aren't in\nChill Mode, though.)"
+"manual6" = "Remember that you're on a timer!\n\nCreating HEXA matches will\nbuy you some more time.\nMatching 2x Tiles will\nearn you even more time\nthan usual, as well.\n\nTry and keep going for\nas long as you can!\n\n(There's no timer in Chill\nMode, of course.)"
+"manual7" = "That should be all you need to\nknow to get started with HEXA!\n\nYou can also consult the manual:\nhttps://rae.wtf/blog/hexa-manual\n..if there's something you're\nstill confused about.\n\nIf you like this game,\nlet me know on-line!\nhttps://rae.wtf\n\n...and thank you for playing!"
 
 "options" = "Options"
 "options_music" = "Music: "
 "options_sfx" = "SFX: "
 "options_flip" = "Flip Rotation: "
 "options_crank" = "Use Crank: "
+"options_skipfanfare" = "Skip Fanfare: "
 "options_reset_1" = "Reset Local Scores"
 "options_reset_2" = "Are you sure?"
 "options_reset_3" = "Are you really sure?!"
@@ -76,7 +83,7 @@
 "false" = "OFF"
 
 "credits" = "Credits"
-"creditslist" = "\n\n\nProgrammed by Rae\nGraphics stuff drawn by Rae\n\nMusic by Watson at MusMus; SFX made\nwith JSFXR. Tanuk lib by Toad & Schyzo\nFonts from Panic & Astigmatic\n\nThank you to...\nVoxy, Toad, scizzorz, superfunc,\nmag, hunty, Scenic, & Panic!"
+"creditslist" = "\n\n\nProgrammed by Rae\nGraphics stuff drawn by Rae\n\nMusic from MusMus; SFX made with JSFXR\nFonts from Panic and Astigmatic\n\nThank you to...\nVoxy, Toad, scizzorz, superfunc,\nmag, hunty, Scenic, Schyzo,\nDRD, Drew-Lo, IGDATC, & Panic!"
 
 "newgame" = "A starts a new game."
 "arcadescores" = "A gets Arcade Mode scores."
@@ -100,3 +107,4 @@
 "toggle" = "A toggles."
 "select" = "A picks."
 "move" = "The D-pad moves."
+"page" = "The D-pad turns the page."

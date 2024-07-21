@@ -52,6 +52,7 @@ function title:init(...)
 
 	vars = {
 		animate = args[1], -- bool. does the title animate on transition back?
+		default = args[2],
 		anim_stars_small_x = pd.timer.new(4000, 0, -399),
 		anim_stars_small_y = pd.timer.new(2750, 0, -239),
 		anim_stars_large_x = pd.timer.new(2500, 0, -399),
@@ -61,33 +62,53 @@ function title:init(...)
 	}
 	vars.titleHandlers = {
 		upButtonDown = function()
-			if vars.selection > 1 then
-				vars.selection -= 1
-				if save.sfx then assets.sfx_move:play() end
-			else
-				if save.sfx then assets.sfx_bonk:play() end
+			if vars.selection ~= 0 then
+				if vars.keytimer ~= nil then vars.keytimer:remove() end
+				vars.keytimer = pd.timer.keyRepeatTimerWithDelay(150, 75, function()
+					if vars.selection > 1 then
+						vars.selection -= 1
+					else
+						vars.selection = #vars.selections
+					end
+					if save.sfx then assets.sfx_move:play() end
+				end)
 			end
+		end,
+
+		upButtonUp = function()
+			if vars.keytimer ~= nil then vars.keytimer:remove() end
 		end,
 
 		downButtonDown = function()
-			if vars.selection < #vars.selections then
-				vars.selection += 1
-				if save.sfx then assets.sfx_move:play() end
-			else
-				if save.sfx then assets.sfx_bonk:play() end
+			if vars.selection ~= 0 then
+				if vars.keytimer ~= nil then vars.keytimer:remove() end
+				vars.keytimer = pd.timer.keyRepeatTimerWithDelay(150, 75, function()
+					if vars.selection < #vars.selections then
+						vars.selection += 1
+					else
+						vars.selection = 1
+					end
+					if save.sfx then assets.sfx_move:play() end
+				end)
 			end
 		end,
 
+		downButtonUp = function()
+			if vars.keytimer ~= nil then vars.keytimer:remove() end
+		end,
+
 		AButtonDown = function()
-			if vars.selections[vars.selection] == "arcademode" then
+			if vars.keytimer ~= nil then vars.keytimer:remove() end
+			if vars.selections[vars.selection] == "arcade" then
 				scenemanager:transitionscene(game, "arcade")
 				fademusic()
-			elseif vars.selections[vars.selection] == "zenmode" then
+			elseif vars.selections[vars.selection] == "zen" then
 				scenemanager:transitionscene(game, "zen")
 				fademusic()
 			elseif vars.selections[vars.selection] == "dailyrun" then
 				if vars.dailyrunnable then
 					scenemanager:transitionscene(game, "dailyrun")
+					save.lastdaily.score = 0
 					fademusic()
 				else
 					shakies()
@@ -110,13 +131,22 @@ function title:init(...)
 	}
 	pd.timer.performAfterDelay(scenemanager.transitiontime, function()
 		pd.inputHandlers.push(vars.titleHandlers)
-		vars.selection = 1
+		if vars.default ~= nil then
+			for i = 1, #vars.selections do
+				if vars.selections[i] == vars.default then
+					vars.selection = i
+				end
+			end
+		end
+		if vars.selection == 0 then
+			vars.selection = 1
+		end
 	end)
 
 	if catalog then
-		vars.selections = {'arcademode', 'zenmode', 'dailyrun', 'highscores', 'howtoplay', 'options', 'credits'}
+		vars.selections = {'arcade', 'zen', 'dailyrun', 'highscores', 'howtoplay', 'options', 'credits'}
 	else
-		vars.selections = {'arcademode', 'zenmode', 'dailyrun', 'howtoplay', 'options', 'credits'}
+		vars.selections = {'arcade', 'zen', 'dailyrun', 'howtoplay', 'options', 'credits'}
 	end
 
 	if vars.animate then
@@ -146,8 +176,8 @@ function title:init(...)
 			else
 				assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (60 - pd.getGMTTime().second) .. text('secs'), 265 + vars.anim_title.value, 130)
 			end
-			assets.half_circle:drawTextAligned(text('arcademode'), 385 + vars.anim_title.value, 90, kTextAlignment.right)
-			assets.half_circle:drawTextAligned(text('zenmode'), 385 + vars.anim_title.value, 110, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('arcade'), 385 + vars.anim_title.value, 90, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('zen'), 385 + vars.anim_title.value, 110, kTextAlignment.right)
 			assets.half_circle:drawTextAligned(text('dailyrun'), 385 + vars.anim_title.value, 130, kTextAlignment.right)
 			assets.half_circle:drawTextAligned(text('highscores'), 385 + vars.anim_title.value, 150, kTextAlignment.right)
 			assets.half_circle:drawTextAligned(text('howtoplay'), 385 + vars.anim_title.value, 170, kTextAlignment.right)
@@ -166,8 +196,8 @@ function title:init(...)
 					assets.half_circle:drawText(((vars.dailyrunnable and '⏰ ') or '🔒 ') .. (60 - pd.getGMTTime().second) .. text('secs'), 265 + vars.anim_title.value, 150)
 				end
 			end
-			assets.half_circle:drawTextAligned(text('arcademode'), 385 + vars.anim_title.value, 110, kTextAlignment.right)
-			assets.half_circle:drawTextAligned(text('zenmode'), 385 + vars.anim_title.value, 130, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('arcade'), 385 + vars.anim_title.value, 110, kTextAlignment.right)
+			assets.half_circle:drawTextAligned(text('zen'), 385 + vars.anim_title.value, 130, kTextAlignment.right)
 			assets.half_circle:drawTextAligned(text('dailyrun'), 385 + vars.anim_title.value, 150, kTextAlignment.right)
 			assets.half_circle:drawTextAligned(text('howtoplay'), 385 + vars.anim_title.value, 170, kTextAlignment.right)
 			assets.half_circle:drawTextAligned(text('options'), 385 + vars.anim_title.value, 190, kTextAlignment.right)
@@ -189,18 +219,14 @@ function title:update()
 	else
 		vars.dailyrunnable = true
 	end
-	local ticks = pd.getCrankTicks(6)
+	local ticks = pd.getCrankTicks(8)
 	if ticks ~= 0 and vars.selection > 0 then
-		if save.sfx then
-			if ticks < 0 and vars.selection == 1 then
-				assets.sfx_bonk:play()
-			elseif ticks > 0 and vars.selection == #vars.selections then
-				assets.sfx_bonk:play()
-			else
-				assets.sfx_move:play()
-			end
-		end
+		if save.sfx then assets.sfx_move:play() end
 		vars.selection += ticks
-		vars.selection = math.max(1, math.min(#vars.selections, vars.selection))
+		if vars.selection < 1 then
+			vars.selection = #vars.selections
+		elseif vars.selection > #vars.selections then
+			vars.selection = 1
+		end
 	end
 end

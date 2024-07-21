@@ -38,7 +38,13 @@ function savecheck()
     if save.sfx == nil then save.sfx = true end
     if save.flip == nil then save.flip = false end
     if save.crank == nil then save.crank = true end
-    if save.lastdaily == nil then save.lastdaily = {year = 0, month = 0, day = 0} end
+    if save.skipfanfare == nil then save.skipfanfare = false end
+    if save.lastdaily == nil then save.lastdaily = {} end
+    save.lastdaily.year = save.lastdaily.year or 0
+    save.lastdaily.month = save.lastdaily.month or 0
+    save.lastdaily.day = save.lastdaily.day or 0
+    save.lastdaily.score = save.lastdaily.score or 0
+    if save.lastdaily.sent == nil then save.lastdaily.sent = false end
     save.score = save.score or 0
 end
 
@@ -82,7 +88,7 @@ music = nil
 
 -- Fades the music out, and trashes it when finished. Should be called alongside a scene change, only if the music is expected to change. Delay can set the delay (in seconds) of the fade
 function fademusic(delay)
-    delay = delay or 700
+    delay = delay or 300
     if music ~= nil then
         music:setVolume(0, 0, delay/700, function()
             music:stop()
@@ -177,6 +183,10 @@ import 'game'
 scenemanager:switchscene(title, true)
 
 function pd.update()
+    if (save.lastdaily.score ~= 0) and not (save.lastdaily.year == pd.getGMTTime().year and save.lastdaily.month == pd.getGMTTime().month and save.lastdaily.day == pd.getGMTTime().day) then
+      save.lastdaily.score = 0
+      save.lastdaily.sent = false
+    end
     -- Screen shake update logic
     if anim_shakies ~= nil then
         pd.display.setOffset(anim_shakies.value, offsety)
@@ -188,4 +198,5 @@ function pd.update()
     -- Catch-all stuff ...
     gfx.sprite.update()
     pd.timer.updateTimers()
+    -- pd.drawFPS(10, 10)
 end

@@ -16,7 +16,7 @@ function howtoplay:init(...)
 		menu:removeAllMenuItems()
 		if not scenemanager.transitioning then
 			menu:addMenuItem(text('goback'), function()
-				scenemanager:transitionscene(title)
+				scenemanager:transitionscene(title, false, 'howtoplay')
 			end)
 		end
 	end
@@ -27,6 +27,9 @@ function howtoplay:init(...)
 		full_circle = gfx.font.new('fonts/full-circle'),
 		half_circle = gfx.font.new('fonts/full-circle-halved'),
 		sfx_back = smp.new('audio/sfx/back'),
+		manual = gfx.imagetable.new('images/manual'),
+		sfx_move = smp.new('audio/sfx/swap'),
+		sfx_bonk = smp.new('audio/sfx/bonk'),
 	}
 
 	vars = {
@@ -34,11 +37,32 @@ function howtoplay:init(...)
 		anim_stars_small_y = pd.timer.new(2750, 0, -239),
 		anim_stars_large_x = pd.timer.new(2500, 0, -399),
 		anim_stars_large_y = pd.timer.new(1250, 0, -239),
+		page = 1,
 	}
 	vars.howtoplayHandlers = {
+		leftButtonDown = function()
+			if vars.page > 1 then
+				vars.page -= 1
+				if save.sfx then assets.sfx_move:play() end
+			else
+				if save.sfx then assets.sfx_bonk:play() end
+				shakies()
+			end
+		end,
+
+		rightButtonDown = function()
+			if vars.page < 7 then
+				vars.page += 1
+				if save.sfx then assets.sfx_move:play() end
+			else
+				if save.sfx then assets.sfx_bonk:play() end
+				shakies()
+			end
+		end,
+
 		BButtonDown = function()
 			if save.sfx then assets.sfx_back:play() end
-			scenemanager:transitionscene(title)
+			scenemanager:transitionscene(title, false, 'howtoplay')
 		end
 	}
 	pd.timer.performAfterDelay(scenemanager.transitiontime, function()
@@ -56,8 +80,10 @@ function howtoplay:init(...)
 		gfx.setDitherPattern(0.25, gfx.image.kDitherTypeBayer2x2)
 		gfx.fillRect(0, 0, 400, 240)
 		gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-		assets.full_circle:drawTextAligned(text('howtoplaylist'), 200, 12, kTextAlignment.center)
-		assets.half_circle:drawText(text('back'), 10, 220)
+		assets.full_circle:drawText(text('manual' .. vars.page), 10, 10)
+		assets.manual[vars.page]:draw(220, 40)
+		assets.half_circle:drawText(text('page') .. ' ' .. text('back'), 10, 220)
+		assets.half_circle:drawTextAligned(vars.page .. '/7', 390, 220, kTextAlignment.right)
 		gfx.setImageDrawMode(gfx.kDrawModeCopy)
 	end)
 

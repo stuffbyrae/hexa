@@ -16,7 +16,7 @@ function options:init(...)
 		menu:removeAllMenuItems()
 		if not scenemanager.transitioning and vars.selection > 0 then
 			menu:addMenuItem(text('goback'), function()
-				scenemanager:transitionscene(title)
+				scenemanager:transitionscene(title, false, 'options')
 				vars.selection = 0
 			end)
 		end
@@ -28,7 +28,6 @@ function options:init(...)
 		full_circle = gfx.font.new('fonts/full-circle'),
 		half_circle = gfx.font.new('fonts/full-circle-halved'),
 		sfx_move = smp.new('audio/sfx/swap'),
-		sfx_bonk = smp.new('audio/sfx/bonk'),
 		sfx_select = smp.new('audio/sfx/select'),
 		sfx_back = smp.new('audio/sfx/back'),
 		sfx_boom = smp.new('audio/sfx/boom'),
@@ -43,39 +42,62 @@ function options:init(...)
 		anim_stars_large_x = pd.timer.new(2500, 0, -399),
 		anim_stars_large_y = pd.timer.new(1250, 0, -239),
 		anim_fg_hexa = pd.timer.new(3000, 0, 7, pd.easingFunctions.inOutSine),
-		selections = {'music', 'sfx', 'flip', 'crank', 'reset'},
+		selections = {'music', 'sfx', 'flip', 'crank', 'skipfanfare', 'reset'},
 		selection = 0,
 		resetprogress = 1,
 	}
 	vars.optionsHandlers = {
 		upButtonDown = function()
-			if vars.selection > 1 then
-				vars.selection -= 1
-				if save.sfx then assets.sfx_move:play() end
-			else
-				if save.sfx then assets.sfx_bonk:play() end
+			if vars.selection ~= 0 then
+				if vars.keytimer ~= nil then vars.keytimer:remove() end
+				vars.keytimer = pd.timer.keyRepeatTimerWithDelay(150, 75, function()
+					if vars.selection > 1 then
+						vars.selection -= 1
+					else
+						vars.selection = #vars.selections
+					end
+					if save.sfx then assets.sfx_move:play() end
+					if vars.resetprogress < 4 then
+						vars.resetprogress = 1
+					end
+				end)
 			end
-			if vars.resetprogress < 4 then
-				vars.resetprogress = 1
-			end
+		end,
+
+		upButtonUp = function()
+			if vars.keytimer ~= nil then vars.keytimer:remove() end
 		end,
 
 		downButtonDown = function()
-			if vars.selection < #vars.selections then
-				vars.selection += 1
-				if save.sfx then assets.sfx_move:play() end
-			else
-				if save.sfx then assets.sfx_bonk:play() end
+			if vars.selection ~= 0 then
+				if vars.keytimer ~= nil then vars.keytimer:remove() end
+				vars.keytimer = pd.timer.keyRepeatTimerWithDelay(150, 75, function()
+					if vars.selection < #vars.selections then
+						vars.selection += 1
+						if save.sfx then assets.sfx_move:play() end
+					else
+						vars.selection = 1
+					end
+					if vars.resetprogress < 4 then
+						vars.resetprogress = 1
+					end
+				end)
 			end
 		end,
 
+		downButtonUp = function()
+			if vars.keytimer ~= nil then vars.keytimer:remove() end
+		end,
+
 		BButtonDown = function()
+			if vars.keytimer ~= nil then vars.keytimer:remove() end
 			if save.sfx then assets.sfx_back:play() end
-			scenemanager:transitionscene(title)
+			scenemanager:transitionscene(title, false, 'options')
 			vars.selection = 0
 		end,
 
 		AButtonDown = function()
+			if vars.keytimer ~= nil then vars.keytimer:remove() end
 			if vars.selections[vars.selection] == "music" then
 				save.music = not save.music
 				if not save.music then
@@ -89,6 +111,8 @@ function options:init(...)
 				save.flip = not save.flip
 			elseif vars.selections[vars.selection] == "crank" then
 				save.crank = not save.crank
+			elseif vars.selections[vars.selection] == "skipfanfare" then
+				save.skipfanfare = not save.skipfanfare
 			elseif vars.selections[vars.selection] == "reset" then
 				if vars.resetprogress < 3 then
 					vars.resetprogress += 1
@@ -119,15 +143,16 @@ function options:init(...)
 		gfx.setDitherPattern(0.25, gfx.image.kDitherTypeBayer2x2)
 		gfx.fillRect(0, 0, 400, 240)
 		gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-		assets.half_circle:drawTextAligned(text('options_music') .. text(tostring(save.music)), 200, 70, kTextAlignment.center)
-		assets.half_circle:drawTextAligned(text('options_sfx') .. text(tostring(save.sfx)), 200, 90, kTextAlignment.center)
-		assets.half_circle:drawTextAligned(text('options_flip') .. text(tostring(save.flip)), 200, 110, kTextAlignment.center)
-		assets.half_circle:drawTextAligned(text('options_crank') .. text(tostring(save.crank)), 200, 130, kTextAlignment.center)
-		assets.half_circle:drawTextAligned(text('options_reset_' .. vars.resetprogress), 200, 150, kTextAlignment.center)
+		assets.half_circle:drawTextAligned(text('options_music') .. text(tostring(save.music)), 200, 60, kTextAlignment.center)
+		assets.half_circle:drawTextAligned(text('options_sfx') .. text(tostring(save.sfx)), 200, 80, kTextAlignment.center)
+		assets.half_circle:drawTextAligned(text('options_flip') .. text(tostring(save.flip)), 200, 100, kTextAlignment.center)
+		assets.half_circle:drawTextAligned(text('options_crank') .. text(tostring(save.crank)), 200, 120, kTextAlignment.center)
+		assets.half_circle:drawTextAligned(text('options_skipfanfare') .. text(tostring(save.skipfanfare)), 200, 140, kTextAlignment.center)
+		assets.half_circle:drawTextAligned(text('options_reset_' .. vars.resetprogress), 200, 160, kTextAlignment.center)
 		if vars.selections[vars.selection] == 'reset' then
-			assets.full_circle:drawTextAligned(text('options_reset_' .. vars.resetprogress), 200, 50 + (20 * vars.selection), kTextAlignment.center)
+			assets.full_circle:drawTextAligned(text('options_reset_' .. vars.resetprogress), 200, 40 + (20 * vars.selection), kTextAlignment.center)
 		else
-			assets.full_circle:drawTextAligned((vars.selection > 0 and text('options_' .. vars.selections[vars.selection]) .. text(tostring(save[vars.selections[vars.selection]]))) or (' '), 200, 50 + (20 * vars.selection), kTextAlignment.center)
+			assets.full_circle:drawTextAligned((vars.selection > 0 and text('options_' .. vars.selections[vars.selection]) .. text(tostring(save[vars.selections[vars.selection]]))) or (' '), 200, 40 + (20 * vars.selection), kTextAlignment.center)
 		end
 		assets.half_circle:drawText('v' .. pd.metadata.version, 65, 205)
 		assets.half_circle:drawText(text('move') .. ' ' .. text('toggle'), 70, 220)
@@ -143,19 +168,15 @@ end
 function options:update()
 	local ticks = pd.getCrankTicks(6)
 	if ticks ~= 0 and vars.selection > 0 then
-		if ticks < 0 and vars.resetprogress > 1 then
+		if vars.resetprogress > 1 then
 			vars.resetprogress = 1
 		end
-		if save.sfx then
-			if ticks < 0 and vars.selection == 1 then
-				assets.sfx_bonk:play()
-			elseif ticks > 0 and vars.selection == #vars.selections then
-				assets.sfx_bonk:play()
-			else
-				assets.sfx_move:play()
-			end
-		end
+		if save.sfx then assets.sfx_move:play() end
 		vars.selection += ticks
-		vars.selection = math.max(1, math.min(#vars.selections, vars.selection))
+		if vars.selection < 1 then
+			vars.selection = #vars.selections
+		elseif vars.selection > #vars.selections then
+			vars.selection = 1
+		end
 	end
 end
