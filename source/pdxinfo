@@ -3,6 +3,6 @@ author=rae
 description=Board the helm of Starship HEXA, and conquer the universe the only way you know how: shapes.
 bundleID=wtf.rae.hexa
 version=1.0.0
-buildNumber=650
+buildNumber=652
 imagePath=images/system
 launchSoundPath=audio/sfx/select
