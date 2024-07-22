@@ -593,9 +593,9 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 			end
 			vars.anim_hexa:resetnew(600, 1, 11)
 			pd.timer.performAfterDelay(200, function()
-				self:check()
 				pd.inputHandlers.push(vars.gameHandlers)
 				vars.active_hexa = false
+				self:check()
 			end)
 		end
 	end)
