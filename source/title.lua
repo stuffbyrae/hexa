@@ -3,6 +3,7 @@ import 'highscores'
 import 'howtoplay'
 import 'options'
 import 'credits'
+import 'jukebox'
 
 -- Setting up consts
 local pd <const> = playdate
@@ -21,9 +22,10 @@ function title:init(...)
 		pauseimage()
 		menu:removeAllMenuItems()
 		if not scenemanager.transitioning and vars.selection > 0 then
-			menu:addMenuItem(text('howtoplay'), function()
-				scenemanager:transitionscene(howtoplay)
+			menu:addMenuItem(text('jukebox'), function()
+				scenemanager:transitionscene(jukebox)
 				vars.selection = 0
+				fademusic()
 			end)
 			if catalog then
 				menu:addMenuItem(text('highscores'), function()
@@ -203,6 +205,15 @@ function title:init(...)
 			assets.half_circle:drawTextAligned(text('options'), 385 + vars.anim_title.value, 190, kTextAlignment.right)
 			assets.half_circle:drawTextAligned(text('credits'), 385 + vars.anim_title.value, 210, kTextAlignment.right)
 			assets.full_circle:drawTextAligned((vars.selection > 0 and text(vars.selections[vars.selection])) or (' '), 385 + vars.anim_title.value, 90 + (20 * vars.selection), kTextAlignment.right)
+		end
+		if vars.selections[vars.selection] == "arcade" then
+			if save.score ~= 0 then
+				assets.full_circle:drawText(text('high') .. text('divvy') .. save.score, 10 - vars.anim_title.value, 205)
+			end
+		elseif vars.selections[vars.selection] == "dailyrun" then
+			if save.lastdaily.score ~= 0 then
+				assets.full_circle:drawText(text('todaysscore') .. text('divvy') .. save.lastdaily.score, 10 - vars.anim_title.value, 205)
+			end
 		end
 		assets.half_circle:drawText(text('move') .. ' ' .. text('select'), 10 - vars.anim_title.value, 220)
 		gfx.setImageDrawMode(gfx.kDrawModeCopy)

@@ -46,6 +46,8 @@ function savecheck()
     save.lastdaily.score = save.lastdaily.score or 0
     if save.lastdaily.sent == nil then save.lastdaily.sent = false end
     save.score = save.score or 0
+    save.swaps = save.swaps or 0
+    save.hexas = save.hexas or 0
 end
 
 -- ... now we run that!
@@ -180,7 +182,7 @@ function shakies_y(time, int)
 end
 
 import 'game'
-scenemanager:switchscene(title, true)
+scenemanager:switchscene(title, true, 'arcade')
 
 function pd.update()
     if (save.lastdaily.score ~= 0) and not (save.lastdaily.year == pd.getGMTTime().year and save.lastdaily.month == pd.getGMTTime().month and save.lastdaily.day == pd.getGMTTime().day) then

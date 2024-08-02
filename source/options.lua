@@ -74,10 +74,10 @@ function options:init(...)
 				vars.keytimer = pd.timer.keyRepeatTimerWithDelay(150, 75, function()
 					if vars.selection < #vars.selections then
 						vars.selection += 1
-						if save.sfx then assets.sfx_move:play() end
 					else
 						vars.selection = 1
 					end
+					if save.sfx then assets.sfx_move:play() end
 					if vars.resetprogress < 4 then
 						vars.resetprogress = 1
 					end
@@ -120,6 +120,8 @@ function options:init(...)
 					if save.sfx then assets.sfx_boom:play() end
 					vars.resetprogress += 1
 					save.score = 0
+					save.swaps = 0
+					save.hexas = 0
 				end
 			end
 			if save.sfx then assets.sfx_select:play() end
@@ -143,6 +145,7 @@ function options:init(...)
 		gfx.setDitherPattern(0.25, gfx.image.kDitherTypeBayer2x2)
 		gfx.fillRect(0, 0, 400, 240)
 		gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+		assets.half_circle:drawTextAligned(text('swaps') .. text('divvy') .. commalize(save.swaps) .. text('dash') .. text('hexas') .. text('divvy') .. commalize(save.hexas), 200, 5, kTextAlignment.center)
 		assets.half_circle:drawTextAligned(text('options_music') .. text(tostring(save.music)), 200, 60, kTextAlignment.center)
 		assets.half_circle:drawTextAligned(text('options_sfx') .. text(tostring(save.sfx)), 200, 80, kTextAlignment.center)
 		assets.half_circle:drawTextAligned(text('options_flip') .. text(tostring(save.flip)), 200, 100, kTextAlignment.center)

@@ -103,6 +103,7 @@ function game:init(...)
 		active_swap = false,
 		boomed = false,
 		lastdir = false,
+		skippedfanfare = false,
 	}
 	vars.gameHandlers = {
 		leftButtonDown = function()
@@ -211,6 +212,13 @@ function game:init(...)
 			end
 		end,
 	}
+	vars.losingHandlers = {
+		AButtonDown = function()
+			if vars.ended and not vars.skippedfanfare then
+				self:ersi()
+			end
+		end
+	}
 	vars.loseHandlers = {
 		AButtonDown = function()
 			if vars.mode == "dailyrun" then
@@ -233,7 +241,11 @@ function game:init(...)
 
 	assets.bg = gfx.image.new('images/bg_' .. vars.mode)
 
-	if vars.mode ~= "dailyrun" then
+	if vars.mode == "dailyrun" then
+		math.randomseed(pd.getGMTTime().year .. pd.getGMTTime().month .. pd.getGMTTime().day)
+		save.lastdaily = pd.getGMTTime()
+	else
+		math.randomseed(playdate.getSecondsSinceEpoch())
 		if flash then
 			vars.anim_bg_tile_x = pd.timer.new(1, 0, 0)
 			vars.anim_bg_tile_y = pd.timer.new(1, 0, 0)
@@ -253,13 +265,6 @@ function game:init(...)
 	vars.anim_powerup.repeats = true
 	vars.anim_bg_stars_x.repeats = true
 	vars.anim_bg_stars_y.repeats = true
-
-	if vars.mode == "dailyrun" then
-		math.randomseed(pd.getGMTTime().year .. pd.getGMTTime().month .. pd.getGMTTime().day)
-		save.lastdaily = pd.getGMTTime()
-	else
-		math.randomseed(playdate.getSecondsSinceEpoch())
-	end
 
 	local newcolor
 	local newpowerup
@@ -406,6 +411,7 @@ function game:swap(slot, dir)
 			vars.active_swap = false
 		end)
 		vars.moves += 1
+		save.swaps += 1
 		if save.sfx then assets.sfx_swap:play() end
 		local tochange
 		temp1, temp2, temp3, temp4, temp5, temp6 = self:findslot(slot)
@@ -530,6 +536,7 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 	pd.timer.performAfterDelay(400, function()
 		if vars.can_do_stuff or (not vars.can_do_stuff and vars.ended) then
 			vars.hexas += 1
+			save.hexas += 1
 			vars.combo += 1
 			shakies()
 			shakies_y()
@@ -712,11 +719,12 @@ function game:restart()
 	vars.anim_cursor_x:resetnew(1, 106, 106)
 	vars.anim_cursor_y:resetnew(1, 42, 42)
 	vars.anim_label:resetnew(0, 400, 400)
-	vars.timer = pd.timer.new(45000, 45000, 0)
+	vars.timer:resetnew(45000, 45000, 0)
+	vars.timer:pause()
+	vars.old_timer_value = 45000
 	if #playdate.inputHandlers == 1 then
 		pd.inputHandlers.push(vars.gameHandlers)
 	end
-	vars.timer.delay = 4000
 	vars.old_timer_value = 45000
 	vars.timer.timerEndedCallback = function()
 		self:endround()
@@ -737,7 +745,7 @@ function game:restart()
 		vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
 	end)
 	pd.timer.performAfterDelay(4000, function()
-		vars.timer.delay = 0
+		vars.timer:start()
 		assets.draw_label = assets.label_go
 		vars.anim_label:resetnew(1000, 400, -200, pd.easingFunctions.linear)
 		vars.anim_label.timerEndedCallback = function()
@@ -750,10 +758,59 @@ function game:restart()
 	end)
 end
 
+function game:ersi()
+	vars.skippedfanfare = true
+	pd.inputHandlers.push(vars.loseHandlers, true)
+	if vars.mode == "zen" then
+		gfx.pushContext(assets.modal)
+			gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+				assets.full_circle:drawTextAligned(text('zen1'), 240, 50, kTextAlignment.center)
+				if vars.moves == 1 then
+					assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
+				else
+					assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
+				end
+				if vars.hexas == 1 then
+					assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
+				else
+					assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
+				end
+				assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
+				assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
+			gfx.setImageDrawMode(gfx.kDrawModeCopy)
+		gfx.popContext()
+	else
+		gfx.pushContext(assets.modal)
+			gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+				assets.full_circle:drawTextAligned(text('score1') .. commalize(vars.score) .. text('score2'), 240, 50, kTextAlignment.center)
+				if vars.moves == 1 then
+					assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
+				else
+					assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
+				end
+				if vars.hexas == 1 then
+					assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
+				else
+					assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
+				end
+				assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
+				if vars.mode == "dailyrun" then
+					assets.half_circle:drawText(text('showsdailyscores') .. ' ' .. text('back'), 40, 205)
+				else
+					assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
+				end
+			gfx.setImageDrawMode(gfx.kDrawModeCopy)
+		gfx.popContext()
+	end
+end
+
 function game:endround()
 	vars.can_do_stuff = false
 	vars.ended = true
 	fademusic(1)
+	if not save.skipfanfare then
+		pd.inputHandlers.push(vars.losingHandlers, true)
+	end
 	if vars.mode ~= "zen" then
 		vars.timer:pause()
 		if save.sfx then assets.sfx_end:play() end
@@ -763,19 +820,19 @@ function game:endround()
 					if save.lastdaily.year == pd.getGMTTime().year and save.lastdaily.month == pd.getGMTTime().month and save.lastdaily.day == pd.getGMTTime().day then
 						save.lastdaily.score = vars.score
 						pd.scoreboards.addScore(vars.mode, vars.score, function(status, result)
+							if status.code == "OK" then
+								save.lastdaily.sent = true
+							else
+								save.lastdaily.sent = false
+							end
 							if pd.isSimulator == 1 then
-								if status.code == "OK" then
-									save.lastdaily.sent = true
-								else
-									save.lastdaily.sent = false
-								end
 								printTable(status)
 								printTable(result)
 							end
 						end)
 					end
-				elseif vars.mode == "arcade" then
-					pd.scoreboards.addScore(vars.mode, vars.score, function(status, result)
+				else
+					pd.scoreboards.addScore('arcade', vars.score, function(status, result)
 						if pd.isSimulator == 1 then
 							printTable(status)
 							printTable(result)
@@ -787,76 +844,65 @@ function game:endround()
 			newmusic('audio/music/lose')
 			vars.anim_modal:resetnew(500, 240, 0, pd.easingFunctions.outBack)
 			if save.skipfanfare then
-				pd.inputHandlers.push(vars.loseHandlers, true)
-				gfx.pushContext(assets.modal)
-					gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						assets.full_circle:drawTextAligned(text('score1') .. commalize(vars.score) .. text('score2'), 240, 50, kTextAlignment.center)
-						if vars.moves == 1 then
-							assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
-						else
-							assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
-						end
-						if vars.hexas == 1 then
-							assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
-						else
-							assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
-						end
-						assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
-						if vars.mode == "dailyrun" then
-							assets.half_circle:drawText(text('showsdailyscores') .. ' ' .. text('back'), 40, 205)
-						else
-							assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
-						end
-					gfx.setImageDrawMode(gfx.kDrawModeCopy)
-				gfx.popContext()
+				self:ersi()
 			else
 				pd.timer.performAfterDelay(548, function()
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-							assets.full_circle:drawTextAligned(text('score1') .. commalize(vars.score) .. text('score2'), 240, 50, kTextAlignment.center)
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+								assets.full_circle:drawTextAligned(text('score1') .. commalize(vars.score) .. text('score2'), 240, 50, kTextAlignment.center)
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 				pd.timer.performAfterDelay(2146, function()
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						if vars.moves == 1 then
-							assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
-						else
-							assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
-						end
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+							if vars.moves == 1 then
+								assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
+							else
+								assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
+							end
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 				pd.timer.performAfterDelay(3957, function()
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						if vars.hexas == 1 then
-							assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
-						else
-							assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
-						end
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+							if vars.hexas == 1 then
+								assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
+							else
+								assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
+							end
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 				pd.timer.performAfterDelay(6138, function()
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+							assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 				pd.timer.performAfterDelay(8976, function()
-					pd.inputHandlers.push(vars.loseHandlers, true)
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						if vars.mode == "dailyrun" then
-							assets.half_circle:drawText(text('showsdailyscores') .. ' ' .. text('back'), 40, 205)
-						else
-							assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
-						end
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						pd.inputHandlers.push(vars.loseHandlers, true)
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+							if vars.mode == "dailyrun" then
+								assets.half_circle:drawText(text('showsdailyscores') .. ' ' .. text('back'), 40, 205)
+							else
+								assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
+							end
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 			end
 		end)
@@ -866,68 +912,61 @@ function game:endround()
 			newmusic('audio/music/zen_end')
 			vars.anim_modal:resetnew(500, 240, 0, pd.easingFunctions.outBack)
 			if save.skipfanfare then
-				pd.inputHandlers.push(vars.loseHandlers, true)
-				gfx.pushContext(assets.modal)
-					gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						assets.full_circle:drawTextAligned(text('zen1'), 240, 50, kTextAlignment.center)
-						if vars.moves == 1 then
-							assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
-						else
-							assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
-						end
-						if vars.hexas == 1 then
-							assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
-						else
-							assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
-						end
-						assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
-						assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
-					gfx.setImageDrawMode(gfx.kDrawModeCopy)
-				gfx.popContext()
+				self:ersi()
 			else
 				pd.timer.performAfterDelay(2140, function()
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-							assets.full_circle:drawTextAligned(text('zen1'), 240, 50, kTextAlignment.center)
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+								assets.full_circle:drawTextAligned(text('zen1'), 240, 50, kTextAlignment.center)
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 				pd.timer.performAfterDelay(3296, function()
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						if vars.moves == 1 then
-							assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
-						else
-							assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
-						end
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+							if vars.moves == 1 then
+								assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2b'), 240, 90, kTextAlignment.center)
+							else
+								assets.full_circle:drawTextAligned(text('stats1') .. commalize(vars.moves) .. text('stats2a'), 240, 90, kTextAlignment.center)
+							end
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 				pd.timer.performAfterDelay(4152, function()
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						if vars.hexas == 1 then
-							assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
-						else
-							assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
-						end
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+							if vars.hexas == 1 then
+								assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4b'), 240, 105, kTextAlignment.center)
+							else
+								assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
+							end
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 				pd.timer.performAfterDelay(5297, function()
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+							assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 				pd.timer.performAfterDelay(8000, function()
-					pd.inputHandlers.push(vars.loseHandlers, true)
-					gfx.pushContext(assets.modal)
-						gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-						assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
-						gfx.setImageDrawMode(gfx.kDrawModeCopy)
-					gfx.popContext()
+					if not vars.skippedfanfare then
+						pd.inputHandlers.push(vars.loseHandlers, true)
+						gfx.pushContext(assets.modal)
+							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+							assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
+							gfx.setImageDrawMode(gfx.kDrawModeCopy)
+						gfx.popContext()
+					end
 				end)
 			end
 		end)
