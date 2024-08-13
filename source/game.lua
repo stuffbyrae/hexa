@@ -14,6 +14,7 @@ local text <const> = gfx.getLocalizedText
 local min <const> = math.min
 local exp <const> = math.exp
 local flash <const> = pd.getReduceFlashing()
+local messagerand <const> = random(1, 10)
 
 class('game').extends(gfx.sprite) -- Create the scene's class
 function game:init(...)
@@ -23,10 +24,20 @@ function game:init(...)
 
 	function pd.gameWillPause() -- When the game's paused...
 		local menu = pd.getSystemMenu()
-		pauseimage(vars.mode)
+		pauseimage(vars.mode, vars.mission or nil)
 		menu:removeAllMenuItems()
 		if not scenemanager.transitioning then
-			if vars.can_do_stuff then
+			if vars.can_do_stuff and (vars.mode == "logic" or vars.mode == "time" or vars.mode == "picture" or vars.mode == "speedrun") then
+				menu:addMenuItem(text('exitmission'), function()
+					if vars.timer ~= nil then
+						vars.timer:pause()
+					end
+					vars.can_do_stuff = false
+					scenemanager:transitionscene(missions)
+					fademusic()
+				end)
+			end
+			if vars.can_do_stuff and (vars.mode == "zen" or vars.mode == "arcade" or vars.mode == "dailyrun") then
 				menu:addMenuItem(text((vars.mode == "zen" and 'imdone') or 'endgame'), function()
 					self:endround()
 				end)
@@ -43,8 +54,7 @@ function game:init(...)
 	end
 
 	assets = {
-		cursor_false = gfx.image.new('images/cursor'),
-		cursor_true = gfx.image.new('images/cursor_pulse'),
+		cursor = gfx.imagetable.new('images/cursor'),
 		full_circle = gfx.font.new('fonts/full-circle'),
 		half_circle = gfx.font.new('fonts/full-circle-halved'),
 		clock = gfx.font.new('fonts/clock'),
@@ -60,6 +70,7 @@ function game:init(...)
 		sfx_start = smp.new('audio/sfx/start'),
 		sfx_end = smp.new('audio/sfx/end'),
 		sfx_hexaprep = smp.new('audio/sfx/hexaprep'),
+		sfx_mission = smp.new('audio/sfx/mission'),
 		powerup_double_up = gfx.imagetable.new('images/powerup_double_up'),
 		powerup_double_down = gfx.imagetable.new('images/powerup_double_down'),
 		powerup_bomb_up = gfx.imagetable.new('images/powerup_bomb_up'),
@@ -77,11 +88,15 @@ function game:init(...)
 		bg_tile = gfx.image.new('images/bg_tile'),
 		stars = gfx.image.new('images/stars_large'),
 		half = gfx.image.new('images/half'),
-		outline = gfx.image.new('images/outline'),
+		mission_complete = gfx.image.new('images/mission_complete'),
 	}
 
 	vars = {
-		mode = args[1], -- "arcade" or "zen" or "dailyrun"
+		mode = args[1], -- "arcade" or "zen" or "dailyrun", or "picture" or "time" or "logic" or "speedrun"
+		mission = args[2], -- number. what mission is this?
+		modifier = args[3], -- modifier for whatever, depending on the mission
+		start = args[4], -- starting layout
+		goal = args[5], -- finishing layout, for picture mode
 		tris = {},
 		slot = 1,
 		score = 0,
@@ -89,6 +104,7 @@ function game:init(...)
 		anim_hexa = pd.timer.new(1, 11, 11),
 		anim_cursor_x = pd.timer.new(1, 106, 106),
 		anim_cursor_y = pd.timer.new(1, 42, 42),
+		anim_cursor = pd.timer.new(0, 1, 1),
 		anim_label = pd.timer.new(0, 400, 400),
 		anim_modal = pd.timer.new(0, 400, 400),
 		anim_bg_stars_x = pd.timer.new(10000, 0, -399),
@@ -100,10 +116,11 @@ function game:init(...)
 		hexas = 0,
 		movesbonus = 5,
 		active_hexa = false,
-		active_swap = false,
 		boomed = false,
 		lastdir = false,
 		skippedfanfare = false,
+		missioncomplete = false,
+		time = 0,
 	}
 	vars.gameHandlers = {
 		leftButtonDown = function()
@@ -239,13 +256,21 @@ function game:init(...)
 		pd.inputHandlers.push(vars.gameHandlers)
 	end)
 
-	assets.bg = gfx.image.new('images/bg_' .. vars.mode)
+	if vars.mode == "dailyrun" or vars.mode == "arcade" or vars.mode == "zen" then
+		assets.bg = gfx.image.new('images/bg_' .. vars.mode)
+	else
+		assets.bg = gfx.image.new('images/bg_zen')
+	end
 
 	if vars.mode == "dailyrun" then
 		math.randomseed(pd.getGMTTime().year .. pd.getGMTTime().month .. pd.getGMTTime().day)
-		save.lastdaily = pd.getGMTTime()
+	elseif vars.mode == "time" then
+		math.randomseed(123459 * vars.mission)
 	else
 		math.randomseed(playdate.getSecondsSinceEpoch())
+	end
+
+	if vars.mode ~= "dailyrun" then
 		if flash then
 			vars.anim_bg_tile_x = pd.timer.new(1, 0, 0)
 			vars.anim_bg_tile_y = pd.timer.new(1, 0, 0)
@@ -265,15 +290,22 @@ function game:init(...)
 	vars.anim_powerup.repeats = true
 	vars.anim_bg_stars_x.repeats = true
 	vars.anim_bg_stars_y.repeats = true
+	vars.anim_cursor.discardOnCompletion = false
 
-	local newcolor
-	local newpowerup
-	for i = 1, 19 do
-		newcolor, newpowerup = self:randomizetri()
-		vars.tris[i] = {index = i, color = newcolor, powerup = newpowerup}
+	if vars.mode == "picture" then
+		vars.tris = deepcopy(vars.goal)
+	elseif vars.mode == "speedrun" or vars.mode == "logic" then
+		vars.tris = deepcopy(vars.start)
+	else
+		local newcolor
+		local newpowerup
+		for i = 1, 19 do
+			newcolor, newpowerup = self:randomizetri()
+			vars.tris[i] = {index = i, color = newcolor, powerup = newpowerup}
+		end
 	end
 
-	if vars.mode ~= "zen" then
+	if vars.mode == "arcade" or vars.mode == "dailyrun" then
 		assets.ui = gfx.image.new('images/ui_arcade')
 		vars.timer = pd.timer.new(45000, 45000, 0)
 		vars.timer.delay = 4000
@@ -315,6 +347,112 @@ function game:init(...)
 			vars.can_do_stuff = true
 			self:check()
 		end)
+	elseif vars.mode == "picture" then
+		vars.anim_cursor_y:resetnew(1, 420, 420)
+		assets.ui = gfx.image.new('images/ui_zen')
+		pd.timer.performAfterDelay(1000, function()
+			if save.sfx then assets.sfx_count:play() end
+			assets.draw_label = assets.label_3
+			vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
+		end)
+		pd.timer.performAfterDelay(2000, function()
+			if save.sfx then assets.sfx_count:play() end
+			assets.draw_label = assets.label_2
+			vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
+		end)
+		pd.timer.performAfterDelay(3000, function()
+			if save.sfx then assets.sfx_count:play() end
+			assets.draw_label = assets.label_1
+			vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
+		end)
+		pd.timer.performAfterDelay(4000, function()
+			vars.anim_cursor_y:resetnew(1, 42, 42)
+			assets.draw_label = assets.label_go
+			vars.anim_label:resetnew(1000, 400, -200, pd.easingFunctions.linear)
+			vars.anim_label.timerEndedCallback = function()
+				assets.draw_label = nil
+			end
+			if save.sfx then assets.sfx_start:play() end
+			vars.tris = deepcopy(vars.start)
+			newmusic('audio/music/zen' .. math.random(1, 2), true)
+			vars.can_do_stuff = true
+		end)
+	elseif vars.mode == "logic" then
+		assets.ui = gfx.image.new('images/ui_zen')
+		pd.timer.performAfterDelay(1000, function()
+			newmusic('audio/music/zen' .. math.random(1, 2), true)
+			vars.can_do_stuff = true
+			self:check()
+		end)
+	elseif vars.mode == "speedrun" then
+		assets.ui = gfx.image.new('images/ui_zen')
+		pd.timer.performAfterDelay(1000, function()
+			if save.sfx then assets.sfx_count:play() end
+			assets.draw_label = assets.label_3
+			vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
+		end)
+		pd.timer.performAfterDelay(2000, function()
+			if save.sfx then assets.sfx_count:play() end
+			assets.draw_label = assets.label_2
+			vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
+		end)
+		pd.timer.performAfterDelay(3000, function()
+			if save.sfx then assets.sfx_count:play() end
+			assets.draw_label = assets.label_1
+			vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
+		end)
+		pd.timer.performAfterDelay(4000, function()
+			vars.anim_cursor_y:resetnew(1, 42, 42)
+			assets.draw_label = assets.label_go
+			vars.anim_label:resetnew(1000, 400, -200, pd.easingFunctions.linear)
+			vars.anim_label.timerEndedCallback = function()
+				assets.draw_label = nil
+			end
+			if save.sfx then assets.sfx_start:play() end
+			newmusic('audio/music/arcade' .. math.random(1, 3), true)
+			vars.can_do_stuff = true
+		end)
+	elseif vars.mode == "time" then
+		assets.ui = gfx.image.new('images/ui_arcade')
+		vars.timer = pd.timer.new(vars.modifier * 1000, vars.modifier * 1000, 0)
+		vars.timer.delay = 4000
+		vars.old_timer_value = vars.modifier * 1000
+		vars.timer.timerEndedCallback = function()
+			self:endround()
+		end
+		pd.timer.performAfterDelay(1000, function()
+			if save.sfx then assets.sfx_count:play() end
+			assets.draw_label = assets.label_3
+			vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
+		end)
+		pd.timer.performAfterDelay(2000, function()
+			if save.sfx then assets.sfx_count:play() end
+			assets.draw_label = assets.label_2
+			vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
+		end)
+		pd.timer.performAfterDelay(3000, function()
+			if save.sfx then assets.sfx_count:play() end
+			assets.draw_label = assets.label_1
+			vars.anim_label:resetnew(1000, 350, -200, pd.easingFunctions.linear)
+		end)
+		pd.timer.performAfterDelay(4000, function()
+			vars.timer.delay = 0
+			assets.draw_label = assets.label_go
+			vars.anim_label:resetnew(1000, 400, -200, pd.easingFunctions.linear)
+			vars.anim_label.timerEndedCallback = function()
+				assets.draw_label = nil
+			end
+			if save.sfx then assets.sfx_start:play() end
+			newmusic('audio/music/arcade' .. math.random(1, 3), true)
+			vars.can_do_stuff = true
+			self:check()
+		end)
+	else
+		assets.ui = gfx.image.new('images/ui_zen')
+		pd.timer.performAfterDelay(1000, function()
+			vars.can_do_stuff = true
+			self:check()
+		end)
 	end
 
 	class('game_canvas').extends(gfx.sprite)
@@ -336,16 +474,13 @@ function game:init(...)
 		for i = 1, 19 do
 			game:tri(tris_x[i], tris_y[i], tris_flip[i], vars.tris[i].color, vars.tris[i].powerup)
 		end
-		assets.outline:draw(79, 44)
-		if vars.active_swap and not flash then
-			assets.cursor_true:draw(vars.anim_cursor_x.value - 1.5, vars.anim_cursor_y.value - 2)
-		else
-			assets.cursor_false:draw(vars.anim_cursor_x.value, vars.anim_cursor_y.value)
-		end
+		local cursor = floor(vars.anim_cursor.value)
+		assets.cursor[cursor]:draw(vars.anim_cursor_x.value - (2 * (cursor - 1)), vars.anim_cursor_y.value - (3 * (cursor - 1)))
 		gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-		if vars.mode ~= "zen" then
+		if vars.mode == "arcade" or vars.mode == "dailyrun" then
 			assets.half_circle:drawText(text('score'), 10, 10)
 			assets.full_circle:drawText(commalize(vars.score), 10, 25)
+			assets.clock:drawText(ceil(vars.timer.value / 1000), 305, 55)
 			if vars.mode == "arcade" then
 				assets.half_circle:drawText(text('high'), 10, 45)
 				assets.full_circle:drawText(commalize((vars.score > save.score and vars.score) or (save.score)), 10, 60)
@@ -353,17 +488,37 @@ function game:init(...)
 				assets.half_circle:drawText(text('seed'), 10, 45)
 				assets.full_circle:drawText(pd.getGMTTime().year .. pd.getGMTTime().month .. pd.getGMTTime().day, 10, 60)
 			end
-			assets.clock:drawText(ceil(vars.timer.value / 1000), 305, 55)
 		elseif vars.mode == "zen" then
 			assets.half_circle:drawText(text('swaps'), 10, 10)
 			assets.full_circle:drawText(commalize(vars.moves), 10, 25)
 			assets.half_circle:drawText(text('hexas'), 10, 45)
 			assets.full_circle:drawText(commalize(vars.hexas), 10, 60)
+		elseif vars.mode == "picture" or vars.mode == "logic" then
+			assets.half_circle:drawText(text('swaps'), 10, 10)
+			assets.full_circle:drawText(commalize(vars.moves), 10, 25)
+			assets.half_circle:drawText(text('best'), 10, 45)
+			assets.full_circle:drawText(commalize(save.mission_bests['mission' .. vars.mission]), 10, 60)
+		elseif vars.mode == "time" then
+			assets.half_circle:drawText(text('score'), 10, 10)
+			assets.full_circle:drawText(commalize(vars.score), 10, 25)
+			assets.clock:drawText(ceil(vars.timer.value / 1000), 305, 55)
+			assets.half_circle:drawText(text('high'), 10, 45)
+			assets.full_circle:drawText(commalize((vars.score > save.mission_bests['mission' .. vars.mission] and vars.score) or (save.mission_bests['mission' .. vars.mission])), 10, 60)
+		elseif vars.mode == "speedrun" then
+			local mins, secs, mils = timecalc(vars.time)
+			local bestmins, bestsecs, bestmils = timecalc(save.mission_bests['mission' .. vars.mission])
+			assets.half_circle:drawText(text('time'), 10, 10)
+			assets.full_circle:drawText(mins .. ':' .. secs .. '.' .. mils, 10, 25)
+			assets.half_circle:drawText(text('best'), 10, 45)
+			assets.full_circle:drawText(bestmins .. ':' .. bestsecs .. '.' .. bestmils, 10, 60)
 		end
 		gfx.setImageDrawMode(gfx.kDrawModeCopy)
-		assets.hexa[math.floor(vars.anim_hexa.value)]:draw(0, 0)
+		assets.hexa[floor(vars.anim_hexa.value)]:draw(0, 0)
 		if not vars.can_do_stuff then
 			assets.half:draw(0, 0)
+		end
+		if vars.missioncomplete then
+			assets.mission_complete:draw(0, 0)
 		end
 		assets.modal:draw(0, vars.anim_modal.value)
 	end
@@ -371,20 +526,43 @@ function game:init(...)
 	sprites.canvas = game_canvas()
 	sprites.code = Tanuk_CodeSequence({pd.kButtonRight, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB}, function() self:boom(true) end)
 	self:add()
+	pd.datastore.write(save)
 end
 
 function game:tri(x, y, up, color, powerup)
-	if color == "gray" then
-		gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer8x8)
+	if color == "white" or color == "gray" then
+		gfx.setColor(gfx.kColorWhite)
 	end
-	if color == "black" or color == "gray" then
+	if color ~= "none" then
 		if up then
 			gfx.fillTriangle(x, y - 25, x + 30, y + 25, x - 30, y + 25)
 		else
 			gfx.fillTriangle(x, y + 25, x + 30, y - 25, x - 30, y - 25)
 		end
+		if color == "gray" then
+			gfx.setColor(gfx.kColorBlack)
+			gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer4x4)
+			if up then
+				gfx.fillTriangle(x, y - 25, x + 30, y + 25, x - 30, y + 25)
+			else
+				gfx.fillTriangle(x, y + 25, x + 30, y - 25, x - 30, y - 25)
+			end
+		end
 		gfx.setColor(gfx.kColorBlack)
+		if up then
+			gfx.drawTriangle(x, y - 25, x + 30, y + 25, x - 30, y + 25)
+		else
+			gfx.drawTriangle(x, y + 25, x + 30, y - 25, x - 30, y - 25)
+		end
+	else
+		gfx.setDitherPattern(0.75, gfx.image.kDitherTypeBayer4x4)
+		if up then
+			gfx.fillTriangle(x, y - 25, x + 30, y + 25, x - 30, y + 25)
+		else
+			gfx.fillTriangle(x, y + 25, x + 30, y - 25, x - 30, y - 25)
+		end
 	end
+	gfx.setColor(gfx.kColorBlack)
 	if powerup ~= "" then
 		if flash then
 			if up then
@@ -403,13 +581,10 @@ function game:tri(x, y, up, color, powerup)
 end
 
 function game:swap(slot, dir)
-	if not vars.active_hexa and not vars.active_swap then
-		vars.active_swap = true
+	if not vars.active_hexa then
 		vars.movesbonus -= 1
 		if vars.movesbonus < 0 then vars.movesbonus = 0 end
-		pd.timer.performAfterDelay(50, function()
-			vars.active_swap = false
-		end)
+		vars.anim_cursor:resetnew(75, 2.99, 1)
 		vars.moves += 1
 		save.swaps += 1
 		if save.sfx then assets.sfx_swap:play() end
@@ -446,6 +621,21 @@ function game:swap(slot, dir)
 end
 
 function game:check()
+	if vars.mode == "picture" then
+		local picturetest = true
+		for i = 1, 19 do
+			local colorcheck1 = vars.tris[i].color
+			local colorcheck2 = vars.goal[i].color
+			if colorcheck1 ~= colorcheck2 then
+				picturetest = false
+				return
+			end
+		end
+		if picturetest then
+			self:endround()
+		end
+		return
+	end
 	if vars.can_do_stuff then
 		local temp1
 		local temp2
@@ -554,8 +744,8 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 				vars.anim_label.timerEndedCallback = function()
 					assets.draw_label = nil
 				end
-				if (vars.mode ~= "zen") and vars.can_do_stuff then
-					vars.timer:resetnew(min(vars.timer.value + (11000 * math.exp(-0.105 * vars.hexas)) + 2750, 60000), min(vars.timer.value + (11000 * math.exp(-0.105 * vars.hexas)) + 2750, 60000), 0)
+				if (vars.mode == "arcade" or vars.mode == "dailyrun") and vars.can_do_stuff then
+					vars.timer:resetnew(min(vars.timer.value + (11000 * exp(-0.105 * vars.hexas)) + 2750, 60000), min(vars.timer.value + (11000 * exp(-0.105 * vars.hexas)) + 2750, 60000), 0)
 				end
 			else
 				if (temp1.color == "white" and temp1.powerup ~= "wild") or (temp2.color == "white" and temp2.powerup ~= "wild") or (temp3.color == "white" and temp3.powerup ~= "wild") or (temp4.color == "white" and temp4.powerup ~= "wild") or (temp5.color == "white" and temp5.powerup ~= "wild") or (temp6.color == "white" and temp6.powerup ~= "wild") then
@@ -565,8 +755,8 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 				elseif (temp1.color == "black" and temp1.powerup ~= "wild") or (temp2.color == "black" and temp2.powerup ~= "wild") or (temp3.color == "black" and temp3.powerup ~= "wild") or (temp4.color == "black" and temp4.powerup ~= "wild") or (temp5.color == "black" and temp5.powerup ~= "wild") or (temp6.color == "black" and temp6.powerup ~= "wild") then
 					vars.score += 200 * vars.combo
 				end
-				if (vars.mode ~= "zen") and vars.can_do_stuff then
-					vars.timer:resetnew(min(vars.timer.value + (7000 * math.exp(-0.105 * vars.hexas)) + 1750, 60000), min(vars.timer.value + (7000 * math.exp(-0.105 * vars.hexas)) + 1750, 60000), 0)
+				if (vars.mode == "arcade" or vars.mode == "dailyrun") and vars.can_do_stuff then
+					vars.timer:resetnew(min(vars.timer.value + (7000 * exp(-0.105 * vars.hexas)) + 1750, 60000), min(vars.timer.value + (7000 * exp(-0.105 * vars.hexas)) + 1750, 60000), 0)
 				end
 			end
 			vars.score += 10 * vars.movesbonus
@@ -599,6 +789,55 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 				end
 			end
 			vars.anim_hexa:resetnew(600, 1, 11)
+			if vars.mode == "logic" or vars.mode == "speedrun" then
+				local logictest = true
+				if vars.modifier == "board" then
+					for i = 1, 19 do
+						if vars.tris[i].color ~= "none" then
+							logictest = false
+						end
+					end
+				elseif vars.modifier == "black" then
+					for i = 1, 19 do
+						if vars.tris[i].color == "black" then
+							logictest = false
+						end
+					end
+				elseif vars.modifier == "gray" then
+					for i = 1, 19 do
+						if vars.tris[i].color == "gray" then
+							logictest = false
+						end
+					end
+				elseif vars.modifier == "white" then
+					for i = 1, 19 do
+						if vars.tris[i].color == "white" then
+							logictest = false
+						end
+					end
+				elseif vars.modifier == "2x" then
+					for i = 1, 19 do
+						if vars.tris[i].powerup == "double" then
+							logictest = false
+						end
+					end
+				elseif vars.modifier == "bomb" then
+					for i = 1, 19 do
+						if vars.tris[i].powerup == "bomb" then
+							logictest = false
+						end
+					end
+				elseif vars.modifier == "wild" then
+					for i = 1, 19 do
+						if vars.tris[i].powerup == "wild" then
+							logictest = false
+						end
+					end
+				end
+				if logictest then
+					self:endround()
+				end
+			end
 			pd.timer.performAfterDelay(200, function()
 				pd.inputHandlers.push(vars.gameHandlers)
 				vars.active_hexa = false
@@ -609,19 +848,21 @@ function game:hexa(temp1, temp2, temp3, temp4, temp5, temp6)
 end
 
 function game:boom(boomed)
-	if ((boomed and not vars.boomed) or (not boomed)) and vars.can_do_stuff then
-		shakies()
-		shakies_y()
-		if boomed then
-			vars.boomed = true
+	if vars.mode == "arcade" or vars.mode == "dailyrun" or vars.mode == "zen" then
+		if ((boomed and not vars.boomed) or (not boomed)) and vars.can_do_stuff then
+			shakies()
+			shakies_y()
+			if boomed then
+				vars.boomed = true
+			end
+			for i = 1, 19 do
+				newcolor, newpowerup = self:randomizetri()
+				vars.tris[i] = {index = i, color = newcolor, powerup = newpowerup}
+			end
+			if save.sfx then assets.sfx_boom:play() end
+			assets.draw_label = assets.label_bomb
+			vars.anim_label:resetnew(1200, 400, -100, pd.easingFunctions.linear)
 		end
-		for i = 1, 19 do
-			newcolor, newpowerup = self:randomizetri()
-			vars.tris[i] = {index = i, color = newcolor, powerup = newpowerup}
-		end
-		if save.sfx then assets.sfx_boom:play() end
-		assets.draw_label = assets.label_bomb
-		vars.anim_label:resetnew(1200, 400, -100, pd.easingFunctions.linear)
 	end
 end
 
@@ -677,31 +918,37 @@ function game:findslot(slot)
 end
 
 function game:randomizetri()
-	local randomcolor = random(1, 3)
-	local randompowerup = random(1, 50)
-	local color
-	local powerup
-	if randomcolor == 1 then
-		color = "black"
-	elseif randomcolor == 2 then
-		color = "white"
-	elseif randomcolor == 3 then
-		color = "gray"
-	end
-	if vars.mode ~= "zen" then
-		if randompowerup == 1 or randompowerup == 2 or randompowerup == 3 then
-			powerup = "double"
-		elseif randompowerup == 4 then
-			powerup = "bomb"
-		elseif randompowerup == 5 then
-			powerup = "wild"
+	if vars.mode == "speedrun" or vars.mode == "logic" then
+		color = "none"
+		powerup = ""
+		return color, powerup
+	else
+		local randomcolor = random(1, 3)
+		local randompowerup = random(1, 50)
+		local color
+		local powerup
+		if randomcolor == 1 then
+			color = "black"
+		elseif randomcolor == 2 then
+			color = "white"
+		elseif randomcolor == 3 then
+			color = "gray"
+		end
+		if vars.mode == "arcade" or vars.mode == "dailyrun" or vars.mode == "time" then
+			if randompowerup == 1 or randompowerup == 2 or randompowerup == 3 then
+				powerup = "double"
+			elseif randompowerup == 4 then
+				powerup = "bomb"
+			elseif randompowerup == 5 then
+				powerup = "wild"
+			else
+				powerup = ""
+			end
 		else
 			powerup = ""
 		end
-	else
-		powerup = ""
+		return color, powerup
 	end
-	return color, powerup
 end
 
 function game:restart()
@@ -714,7 +961,6 @@ function game:restart()
 	vars.hexas = 0
 	vars.anim_hexa:resetnew(1, 11, 11)
 	vars.active_hexa = false
-	vars.active_swap = false
 	vars.slot = 1
 	vars.anim_cursor_x:resetnew(1, 106, 106)
 	vars.anim_cursor_y:resetnew(1, 42, 42)
@@ -775,7 +1021,7 @@ function game:ersi()
 				else
 					assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
 				end
-				assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
+				assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. messagerand), 190, 150, kTextAlignment.center)
 				assets.half_circle:drawText(text('newgame') .. ' ' .. text('back'), 40, 205)
 			gfx.setImageDrawMode(gfx.kDrawModeCopy)
 		gfx.popContext()
@@ -793,7 +1039,7 @@ function game:ersi()
 				else
 					assets.full_circle:drawTextAligned(text('stats3') .. commalize(vars.hexas) .. text('stats4a'), 240, 105, kTextAlignment.center)
 				end
-				assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
+				assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. messagerand), 190, 150, kTextAlignment.center)
 				if vars.mode == "dailyrun" then
 					assets.half_circle:drawText(text('showsdailyscores') .. ' ' .. text('back'), 40, 205)
 				else
@@ -805,16 +1051,20 @@ function game:ersi()
 end
 
 function game:endround()
-	vars.can_do_stuff = false
-	vars.ended = true
 	fademusic(1)
-	if not save.skipfanfare then
-		pd.inputHandlers.push(vars.losingHandlers, true)
-	end
-	if vars.mode ~= "zen" then
-		vars.timer:pause()
-		if save.sfx then assets.sfx_end:play() end
+	if vars.mode == "arcade" or vars.mode == "dailyrun" then
+		if not vars.ended then
+			vars.timer:pause()
+			if save.sfx then assets.sfx_end:play() end
+		end
 		pd.timer.performAfterDelay(2000, function()
+			if vars.active_hexa then
+				self:endround()
+				return
+			end
+			if not save.skipfanfare then
+				pd.inputHandlers.push(vars.losingHandlers, true)
+			end
 			if catalog then
 				if vars.mode == "dailyrun" then
 					if save.lastdaily.year == pd.getGMTTime().year and save.lastdaily.month == pd.getGMTTime().month and save.lastdaily.day == pd.getGMTTime().day then
@@ -841,6 +1091,7 @@ function game:endround()
 				end
 			end
 			if vars.score > save.score and vars.mode == "arcade" then save.score = vars.score end
+			pd.datastore.write(save)
 			newmusic('audio/music/lose')
 			vars.anim_modal:resetnew(500, 240, 0, pd.easingFunctions.outBack)
 			if save.skipfanfare then
@@ -885,7 +1136,7 @@ function game:endround()
 					if not vars.skippedfanfare then
 						gfx.pushContext(assets.modal)
 							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-							assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
+							assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. messagerand), 190, 150, kTextAlignment.center)
 							gfx.setImageDrawMode(gfx.kDrawModeCopy)
 						gfx.popContext()
 					end
@@ -907,8 +1158,18 @@ function game:endround()
 			end
 		end)
 	elseif vars.mode == "zen" then
-		if save.sfx then assets.sfx_start:play() end
+		if not vars.ended then
+			if save.sfx then assets.sfx_start:play() end
+		end
 		pd.timer.performAfterDelay(1000, function()
+			if vars.active_hexa then
+				self:endround()
+				return
+			end
+			if not save.skipfanfare then
+				pd.inputHandlers.push(vars.losingHandlers, true)
+			end
+			pd.datastore.write(save)
 			newmusic('audio/music/zen_end')
 			vars.anim_modal:resetnew(500, 240, 0, pd.easingFunctions.outBack)
 			if save.skipfanfare then
@@ -953,7 +1214,7 @@ function game:endround()
 					if not vars.skippedfanfare then
 						gfx.pushContext(assets.modal)
 							gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-							assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. random(1, 10)), 190, 150, kTextAlignment.center)
+							assets.full_circle:drawTextAligned(text(vars.mode .. '_message' .. messagerand), 190, 150, kTextAlignment.center)
 							gfx.setImageDrawMode(gfx.kDrawModeCopy)
 						gfx.popContext()
 					end
@@ -970,12 +1231,98 @@ function game:endround()
 				end)
 			end
 		end)
+	elseif vars.mode == "picture" then
+		if not vars.ended then
+			if save.sfx then assets.sfx_start:play() end
+			if vars.mission == save.highest_mission then
+				save.highest_mission += 1
+			end
+			if save.mission_bests['mission' .. vars.mission] == 0 or save.mission_bests['mission' .. vars.mission] > vars.moves then
+				save.mission_bests['mission' .. vars.mission] = vars.moves
+			end
+		end
+		pd.timer.performAfterDelay(1500, function()
+			if save.sfx then assets.sfx_mission:play() end
+			vars.missioncomplete = true
+			pd.datastore.write(save)
+		end)
+		pd.timer.performAfterDelay(3000, function()
+			scenemanager:transitionscene(missions)
+		end)
+	elseif vars.mode == "time" then
+		if not vars.ended then
+			if save.sfx then assets.sfx_end:play() end
+			if vars.mission == save.highest_mission then
+				save.highest_mission += 1
+			end
+			if save.mission_bests['mission' .. vars.mission] < vars.score then
+				save.mission_bests['mission' .. vars.mission] = vars.score
+			end
+		end
+		pd.timer.performAfterDelay(1500, function()
+			if vars.active_hexa then
+				self:endround()
+				return
+			end
+			if save.sfx then assets.sfx_mission:play() end
+			vars.missioncomplete = true
+			pd.datastore.write(save)
+			pd.timer.performAfterDelay(1500, function()
+				scenemanager:transitionscene(missions)
+			end)
+		end)
+	elseif vars.mode == "logic" then
+		if not vars.ended then
+			if save.sfx then assets.sfx_end:play() end
+			if vars.mission == save.highest_mission then
+				save.highest_mission += 1
+			end
+			if save.mission_bests['mission' .. vars.mission] == 0 or save.mission_bests['mission' .. vars.mission] > vars.moves then
+				save.mission_bests['mission' .. vars.mission] = vars.moves
+			end
+		end
+		pd.timer.performAfterDelay(1500, function()
+			if vars.active_hexa then
+				self:endround()
+				return
+			end
+			if save.sfx then assets.sfx_mission:play() end
+			vars.missioncomplete = true
+			pd.datastore.write(save)
+			pd.timer.performAfterDelay(1500, function()
+				scenemanager:transitionscene(missions)
+			end)
+		end)
+	elseif vars.mode == "speedrun" then
+		if not vars.ended then
+			if save.sfx then assets.sfx_end:play() end
+			if vars.mission == save.highest_mission then
+				save.highest_mission += 1
+			end
+			if save.mission_bests['mission' .. vars.mission] == 0 or save.mission_bests['mission' .. vars.mission] > vars.time then
+				save.mission_bests['mission' .. vars.mission] = vars.time
+			end
+		end
+		pd.timer.performAfterDelay(1500, function()
+			if vars.active_hexa then
+				self:endround()
+				return
+			end
+			if save.sfx then assets.sfx_mission:play() end
+			vars.missioncomplete = true
+			pd.datastore.write(save)
+			pd.timer.performAfterDelay(1500, function()
+				scenemanager:transitionscene(missions)
+			end)
+		end)
 	end
+	vars.can_do_stuff = false
+	vars.ended = true
 end
 
 function game:update()
 	if save.crank and vars.can_do_stuff and not vars.active_hexa then
-		local ticks = pd.getCrankTicks(6)
+		local ticks = pd.getCrankTicks(3 * save.sensitivity)
 		if ticks >= 1 then
 			for i = 1, ticks do
 				if save.flip then
@@ -994,7 +1341,7 @@ function game:update()
 			end
 		end
 	end
-	if vars.mode ~= "zen" then
+	if vars.mode == "arcade" or vars.mode == "dailyrun" or vars.mode == "time" then
 		if vars.old_timer_value > 10000 and vars.timer.value <= 10000 then
 			shakies(500, 1)
 			shakies_y(750, 1)
@@ -1046,5 +1393,8 @@ function game:update()
 			if save.sfx then assets.sfx_count:play() end
 		end
 		vars.old_timer_value = vars.timer.value
+	end
+	if vars.mode == "speedrun" and vars.can_do_stuff then
+		vars.time += 1
 	end
 end

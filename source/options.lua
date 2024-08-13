@@ -110,7 +110,16 @@ function options:init(...)
 			elseif vars.selections[vars.selection] == "flip" then
 				save.flip = not save.flip
 			elseif vars.selections[vars.selection] == "crank" then
-				save.crank = not save.crank
+				if save.sensitivity == 2 then
+					save.sensitivity = 1
+					save.crank = true
+				elseif save.sensitivity == 1 then
+					save.sensitivity = 0
+					save.crank = false
+				elseif save.sensitivity == 0 then
+					save.sensitivity = 2
+					save.crank = true
+				end
 			elseif vars.selections[vars.selection] == "skipfanfare" then
 				save.skipfanfare = not save.skipfanfare
 			elseif vars.selections[vars.selection] == "reset" then
@@ -122,6 +131,11 @@ function options:init(...)
 					save.score = 0
 					save.swaps = 0
 					save.hexas = 0
+					save.mission_bests = {}
+					save.highest_mission = 1
+					for i = 1, 50 do
+						save.mission_bests['mission' .. i] = 0
+					end
 				end
 			end
 			if save.sfx then assets.sfx_select:play() end
@@ -149,13 +163,17 @@ function options:init(...)
 		assets.half_circle:drawTextAligned(text('options_music') .. text(tostring(save.music)), 200, 60, kTextAlignment.center)
 		assets.half_circle:drawTextAligned(text('options_sfx') .. text(tostring(save.sfx)), 200, 80, kTextAlignment.center)
 		assets.half_circle:drawTextAligned(text('options_flip') .. text(tostring(save.flip)), 200, 100, kTextAlignment.center)
-		assets.half_circle:drawTextAligned(text('options_crank') .. text(tostring(save.crank)), 200, 120, kTextAlignment.center)
+		assets.half_circle:drawTextAligned(text('options_crank') .. text(tostring(save.sensitivity)), 200, 120, kTextAlignment.center)
 		assets.half_circle:drawTextAligned(text('options_skipfanfare') .. text(tostring(save.skipfanfare)), 200, 140, kTextAlignment.center)
 		assets.half_circle:drawTextAligned(text('options_reset_' .. vars.resetprogress), 200, 160, kTextAlignment.center)
 		if vars.selections[vars.selection] == 'reset' then
 			assets.full_circle:drawTextAligned(text('options_reset_' .. vars.resetprogress), 200, 40 + (20 * vars.selection), kTextAlignment.center)
 		else
-			assets.full_circle:drawTextAligned((vars.selection > 0 and text('options_' .. vars.selections[vars.selection]) .. text(tostring(save[vars.selections[vars.selection]]))) or (' '), 200, 40 + (20 * vars.selection), kTextAlignment.center)
+			if vars.selections[vars.selection] == "crank" then
+				assets.full_circle:drawTextAligned(text('options_crank') .. text(tostring(save.sensitivity)), 200, 40 + (20 * vars.selection), kTextAlignment.center)
+			else
+				assets.full_circle:drawTextAligned((vars.selection > 0 and text('options_' .. vars.selections[vars.selection]) .. text(tostring(save[vars.selections[vars.selection]]))) or (' '), 200, 40 + (20 * vars.selection), kTextAlignment.center)
+			end
 		end
 		assets.half_circle:drawText('v' .. pd.metadata.version, 65, 205)
 		assets.half_circle:drawText(text('move') .. ' ' .. text('toggle'), 70, 220)

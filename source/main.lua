@@ -1,4 +1,5 @@
 -- Importing things
+import 'gridview'
 import 'CoreLibs/math'
 import 'CoreLibs/timer'
 import 'CoreLibs/crank'
@@ -16,10 +17,14 @@ local gfx <const> = pd.graphics
 local smp <const> = pd.sound.sampleplayer
 local fle <const> = pd.sound.fileplayer
 local text <const> = gfx.getLocalizedText
-local mask_arcade <const> = gfx.image.new('images/mask_arcade')
+local mask_arcade_true <const> = gfx.image.new('images/mask_arcade_true')
+local mask_arcade_false <const> = gfx.image.new('images/mask_arcade_false')
 local mask_zen <const> = gfx.image.new('images/mask_zen')
 local pause <const> = gfx.image.new('images/pause')
 local pause_luci <const> = gfx.image.new('images/pause_luci')
+local tris_x <const> = {140, 170, 200, 230, 260, 110, 140, 170, 200, 230, 260, 290, 110, 140, 170, 200, 230, 260, 290}
+local tris_y <const> = {70, 70, 70, 70, 70, 120, 120, 120, 120, 120, 120, 120, 170, 170, 170, 170, 170, 170, 170}
+local tris_flip <const> = {true, false, true, false, true, true, false, true, false, true, false, true, false, true, false, true, false, true, false}
 
 catalog = false
 if pd.metadata.bundleID == "wtf.rae.hexa" then
@@ -38,6 +43,7 @@ function savecheck()
     if save.sfx == nil then save.sfx = true end
     if save.flip == nil then save.flip = false end
     if save.crank == nil then save.crank = true end
+    save.sensitivity = save.sensitivity or 2
     if save.skipfanfare == nil then save.skipfanfare = false end
     if save.lastdaily == nil then save.lastdaily = {} end
     save.lastdaily.year = save.lastdaily.year or 0
@@ -48,6 +54,11 @@ function savecheck()
     save.score = save.score or 0
     save.swaps = save.swaps or 0
     save.hexas = save.hexas or 0
+    if save.mission_bests == nil then save.mission_bests = {} end
+    save.highest_mission = save.highest_mission or 1
+    for i = 1, 50 do
+        save.mission_bests['mission' .. i] = save.mission_bests['mission' .. i] or 0
+    end
 end
 
 -- ... now we run that!
@@ -63,21 +74,52 @@ function pauseimage(mode)
         pd.setMenuImage(pause_luci)
     else
         local image = gfx.getDisplayImage()
+        local pauseimg = pause:copy()
         gfx.pushContext(image)
-            if mode == "arcade" or mode == "dailyrun" then
-                mask_arcade:draw(0, 0)
-            elseif mode == "zen" then
+            if mode == "picture" then
+              assets.ui:draw(0, 0)
+              for i = 1, 19 do
+                game:tri(tris_x[i], tris_y[i], tris_flip[i], vars.goal[i].color, vars.goal[i].powerup)
+              end
+            end
+            if mode == "arcade" or mode == "dailyrun" or mode == "time" or mode == "speedrun" then
+              if save.crank then
+                mask_arcade_true:draw(0, 0)
+              else
+                mask_arcade_false:draw(0, 0)
+              end
+            elseif mode == "zen" or mode == "picture" or mode == "logic" then
                 mask_zen:draw(0, 0)
             end
         gfx.popContext()
-        gfx.pushContext(pause)
-        if mode == "arcade" or mode == "dailyrun" then
+        gfx.pushContext(pauseimg)
+        if mode == "arcade" or mode == "dailyrun" or mode == "time" or mode == "speedrun" then
             image:drawScaled(-45, 65, 0.666)
-        elseif mode == "zen" then
+        elseif mode == "zen" or mode == "picture" or mode == "logic" then
             image:drawScaled(-33, 65, 0.666)
         end
+        if vars.mode == "time" or vars.mode == "speedrun" or vars.mode == "picture" or vars.mode == "logic" then
+          local x = 0
+          local y = 0
+          local width = 200
+          local height = 80
+          local column = vars.mission
+          gfx.setColor(gfx.kColorWhite)
+          gfx.fillRect(x, y, width, height)
+          gfx.setColor(gfx.kColorBlack)
+          gfx.setDitherPattern(0.75, gfx.image.kDitherTypeBayer2x2)
+          gfx.fillPolygon(x, y, x + width, y, x + width, y + height, x + width - (width * 0.2), y + height, x + width - (width * 0.05), y + (height / 2), x + width - (width * 0.2), y, x + width * 0.2, y, x + width * 0.05, y + (height / 2), x + width * 0.2, y + height, x, y + height, x, y)
+          gfx.setColor(gfx.kColorBlack)
+          if missions_list[column].type == "picture" then
+            assets.full_circle:drawTextAligned(text('mission_picture1') .. missions_list[column].name .. text('mission_picture2'), x + (width / 2), y + (height / 8), kTextAlignment.center)
+          elseif missions_list[column].type == "logic" or missions_list[column].type == "speedrun" then
+            assets.full_circle:drawTextAligned(text('mission_' .. missions_list[column].type .. '_' .. missions_list[column].modifier), x + (width / 2), y + (height / 8), kTextAlignment.center)
+          else
+            assets.full_circle:drawTextAligned(text('mission_' .. missions_list[column].type), x + (width / 2), y + (height / 8), kTextAlignment.center)
+          end
+        end
         gfx.popContext()
-        pd.setMenuImage(pause)
+        pd.setMenuImage(pauseimg)
     end
 end
 
@@ -166,6 +208,39 @@ function commalize(amount)
   return formatted
 end
 
+-- http://lua-users.org/wiki/CopyTable
+-- Save copied tables in `copies`, indexed by original table.
+function deepcopy(orig, copies)
+    copies = copies or {}
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        if copies[orig] then
+            copy = copies[orig]
+        else
+            copy = {}
+            copies[orig] = copy
+            for orig_key, orig_value in next, orig, nil do
+                copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
+            end
+            setmetatable(copy, deepcopy(getmetatable(orig), copies))
+        end
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+-- This function takes a score number as input, and spits out the proper time in minutes, seconds, and milliseconds
+function timecalc(num)
+    local mins = math.floor((num/30) / 60)
+    local secs = math.floor((num/30) - mins * 60)
+    local mils = math.floor((num/30)*99 - mins * 5940 - secs * 99)
+    if secs < 10 then secs = '0' .. secs end
+    if mils < 10 then mils = '0' .. mils end
+    return mins, secs, mils
+end
+
 -- This function shakes the screen. int is a number representing intensity. time is a number representing duration
 function shakies(time, int)
     if pd.getReduceFlashing() or perf then -- If reduce flashing is enabled, then don't shake.
@@ -181,7 +256,6 @@ function shakies_y(time, int)
     anim_shakies_y = pd.timer.new(time or 750, int or 10, 0, pd.easingFunctions.outElastic)
 end
 
-import 'game'
 scenemanager:switchscene(title, true, 'arcade')
 
 function pd.update()
